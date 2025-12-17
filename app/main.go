@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
+	"interpreter/app/pkg/lexar"
 )
 
 func main() {
