@@ -34,10 +34,15 @@ func main() {
 	tokens, errors := lexarInstance.Scan()
 
 	for _, err := range errors {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 	}
+	os.Stderr.Sync()
 
 	for _, token := range tokens {
 		fmt.Println(token.ToString())
+	}
+
+	if len(errors) != 0 {
+		os.Exit(65)
 	}
 }

@@ -1,6 +1,8 @@
 package lexar
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type TokenType string
 
@@ -16,6 +18,22 @@ const (
 	plus       TokenType = "PLUS"
 	minus      TokenType = "MINUS"
 	semicolon  TokenType = "SEMICOLON"
+	slash      TokenType = "SLASH"
+
+	// one or two character tokens
+	bang         TokenType = "BANG"
+	bangEqual    TokenType = "BANG_EQUAL"
+	equal        TokenType = "EQUAL"
+	equalEqual   TokenType = "EQUAL_EQUAL"
+	greater      TokenType = "GREATER"
+	greaterEqual TokenType = "GREATER_EQUAL"
+	less         TokenType = "LESS"
+	lessEqual    TokenType = "LESS_EQUAL"
+
+	// literals
+	identifier TokenType = "IDENTIFIER"
+	stringTok  TokenType = "STRING"
+	number     TokenType = "NUMBER"
 
 	eof TokenType = "EOF"
 )
@@ -44,23 +62,16 @@ func (l *Lexar) eof() bool {
 	return l.index >= len(l.input)
 }
 
-func (l *Lexar) peekNext() byte {
-	if l.eof() {
-		return '$'
-	}
-	index := l.index
-	index++
-
-	return l.input[index]
-}
-
-func (l *Lexar) advance() byte {
-	char := l.input[l.index]
+func (l *Lexar) next() byte {
+	char := l.peek()
 	l.index++
 	return char
 }
 
 func (l *Lexar) peek() byte {
+	if l.eof() {
+		return '$'
+	}
 	return l.input[l.index]
 }
 
@@ -72,39 +83,98 @@ func NewLexar(input []byte) *Lexar {
 	}
 }
 
+func (l *Lexar) match(expected byte) bool {
+	isMatch := l.peek() == expected
+	if isMatch {
+		l.index++
+	}
+
+	return isMatch
+}
+
 func (l *Lexar) Scan() ([]Token, []error) {
 	tokens := []Token{}
-	errors := []error{}
+	errorArr := []error{}
 	for !l.eof() {
-		token := l.advance()
-		switch token {
+		currentIndex := l.index
+		inputChar := l.next()
+		token := Token{}
+		switch inputChar {
 		case '(':
-			tokens = append(tokens, Token{tokenType: leftParen, lexeme: string(token)})
+			token.tokenType = leftParen
 		case ')':
-			tokens = append(tokens, Token{tokenType: rightParen, lexeme: string(token)})
+			token.tokenType = rightParen
 		case '{':
-			tokens = append(tokens, Token{tokenType: leftBrace, lexeme: string(token)})
+			token.tokenType = leftBrace
 		case '}':
-			tokens = append(tokens, Token{tokenType: rightBrace, lexeme: string(token)})
+			token.tokenType = rightBrace
 		case '*':
-			tokens = append(tokens, Token{tokenType: star, lexeme: string(token)})
+			token.tokenType = star
 		case '+':
-			tokens = append(tokens, Token{tokenType: plus, lexeme: string(token)})
+			token.tokenType = plus
 		case ',':
-			tokens = append(tokens, Token{tokenType: comma, lexeme: string(token)})
+			token.tokenType = comma
 		case '.':
-			tokens = append(tokens, Token{tokenType: dot, lexeme: string(token)})
+			token.tokenType = dot
 		case '-':
-			tokens = append(tokens, Token{tokenType: minus, lexeme: string(token)})
+			token.tokenType = minus
 		case ';':
-			tokens = append(tokens, Token{tokenType: semicolon, lexeme: string(token)})
+			token.tokenType = semicolon
 		case '\n':
 			l.line++
+			continue
+		case '=':
+			token.tokenType = equal
+			if l.match('=') {
+				token.tokenType = equalEqual
+			}
+		case '!':
+			token.tokenType = bang
+			if l.match('=') {
+				token.tokenType = bangEqual
+			}
+		case '>':
+			token.tokenType = greater
+			if l.match('=') {
+				token.tokenType = greaterEqual
+			}
+		case '<':
+			token.tokenType = less
+			if l.match('=') {
+				token.tokenType = lessEqual
+			}
+		case '\t', ' ', '\r':
+			continue
+		case '"':
+			for l.peek() != '"' && !l.eof() {
+				l.next()
+			}
+			token.tokenType = stringTok
+			token.literal = string(l.input[currentIndex+1 : l.index])
+
+			if l.peek() != '"' {
+				errorArr = append(errorArr, fmt.Errorf("[line %d] Error: Unterminated string.", l.line))
+				continue
+			}
+			l.next()
+
+		case '/':
+			if l.match('/') {
+				for l.peek() != '\n' && !l.eof() {
+					// skip comments
+					l.next()
+				}
+				continue
+			}
+			token.tokenType = slash
 		default:
-			errors = append(errors, fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(token)))
+			errorArr = append(errorArr, fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar)))
+			continue
 		}
+		token.lexeme = string(l.input[currentIndex:l.index])
+		tokens = append(tokens, token)
 	}
 	tokens = append(tokens, Token{tokenType: eof, lexeme: ""})
 
-	return tokens, errors
+	return tokens, errorArr
 }

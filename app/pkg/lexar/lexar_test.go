@@ -61,6 +61,51 @@ func TestLexar(t *testing.T) {
 			},
 			errors: []error{errors.New("[line 1] Error: Unexpected character: $"), errors.New("[line 1] Error: Unexpected character: #")},
 		},
+		{
+			input: "==,=,!!==,>>=<<=",
+			output: []Token{
+				{tokenType: equalEqual, lexeme: "==", literal: ""},
+				{tokenType: comma, lexeme: ",", literal: ""},
+				{tokenType: equal, lexeme: "=", literal: ""},
+				{tokenType: comma, lexeme: ",", literal: ""},
+				{tokenType: bang, lexeme: "!", literal: ""},
+				{tokenType: bangEqual, lexeme: "!=", literal: ""},
+				{tokenType: equal, lexeme: "=", literal: ""},
+				{tokenType: comma, lexeme: ",", literal: ""},
+				{tokenType: greater, lexeme: ">", literal: ""},
+				{tokenType: greaterEqual, lexeme: ">=", literal: ""},
+				{tokenType: less, lexeme: "<", literal: ""},
+				{tokenType: lessEqual, lexeme: "<=", literal: ""},
+				{tokenType: eof, lexeme: "", literal: ""},
+			},
+		},
+		{
+			input: "/,\n//comment\n,\t \r",
+			output: []Token{
+				{tokenType: slash, lexeme: "/", literal: ""},
+				{tokenType: comma, lexeme: ",", literal: ""},
+				{tokenType: comma, lexeme: ",", literal: ""},
+				{tokenType: eof, lexeme: "", literal: ""},
+			},
+		},
+		{
+			input: "/\",,123\"/",
+			output: []Token{
+				{tokenType: slash, lexeme: "/", literal: ""},
+				{tokenType: stringTok, lexeme: "\",,123\"", literal: ",,123"},
+				{tokenType: slash, lexeme: "/", literal: ""},
+				{tokenType: eof, lexeme: "", literal: ""},
+			},
+		},
+		{
+			input: "\"baz\" . \"unterminated",
+			output: []Token{
+				{tokenType: stringTok, lexeme: "\"baz\"", literal: "baz"},
+				{tokenType: dot, lexeme: ".", literal: ""},
+				{tokenType: eof, lexeme: "", literal: ""},
+			},
+			errors: []error{errors.New("[line 1] Error: Unterminated string.")},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -69,12 +114,12 @@ func TestLexar(t *testing.T) {
 			tokens, errors := lexar.Scan()
 
 			if len(testCase.output) != len(tokens) {
-				t.Fatalf("length mismatch: expected %d tokens, got %d",
+				t.Errorf("length mismatch: expected %d tokens, got %d",
 					len(testCase.output), len(tokens))
 			}
 
 			if len(testCase.errors) != len(errors) {
-				t.Fatalf("length mismatch: expected %d errors, got %d",
+				t.Errorf("length mismatch: expected %d errors, got %d",
 					len(testCase.errors), len(errors))
 			}
 
