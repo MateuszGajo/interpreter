@@ -92,6 +92,10 @@ func (l *Lexar) match(expected byte) bool {
 	return isMatch
 }
 
+func isNumber(char byte) bool {
+	return char >= '0' && char <= '9'
+}
+
 func (l *Lexar) Scan() ([]Token, []error) {
 	tokens := []Token{}
 	errorArr := []error{}
@@ -168,8 +172,18 @@ func (l *Lexar) Scan() ([]Token, []error) {
 			}
 			token.tokenType = slash
 		default:
-			errorArr = append(errorArr, fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar)))
-			continue
+			if isNumber(inputChar) {
+				err := l.parseNumber()
+				if err != nil {
+					errorArr = append(errorArr, fmt.Errorf("[line %d] Error: %v val: %v", l.line, err.Error(), string(l.input[currentIndex:l.index])))
+					continue
+				}
+				token.tokenType = number
+				token.literal = string(l.input[currentIndex:l.index])
+			} else {
+				errorArr = append(errorArr, fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar)))
+				continue
+			}
 		}
 		token.lexeme = string(l.input[currentIndex:l.index])
 		tokens = append(tokens, token)
@@ -177,4 +191,26 @@ func (l *Lexar) Scan() ([]Token, []error) {
 	tokens = append(tokens, Token{tokenType: eof, lexeme: ""})
 
 	return tokens, errorArr
+}
+
+func (l *Lexar) parseNumber() error {
+	for isNumber(l.peek()) {
+		l.next()
+	}
+
+	if l.peek() != '.' {
+		return nil
+	}
+
+	l.next()
+
+	if !isNumber(l.peek()) {
+		return fmt.Errorf("Invalid number")
+	}
+
+	for isNumber(l.peek()) {
+		l.next()
+	}
+
+	return nil
 }
