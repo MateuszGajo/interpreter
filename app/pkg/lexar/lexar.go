@@ -2,59 +2,112 @@ package lexar
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type TokenType string
 
 const (
 	// single character tokens
-	leftParen  TokenType = "LEFT_PAREN"
-	rightParen TokenType = "RIGHT_PAREN"
-	leftBrace  TokenType = "LEFT_BRACE"
-	rightBrace TokenType = "RIGHT_BRACE"
-	star       TokenType = "STAR"
-	dot        TokenType = "DOT"
-	comma      TokenType = "COMMA"
-	plus       TokenType = "PLUS"
-	minus      TokenType = "MINUS"
-	semicolon  TokenType = "SEMICOLON"
-	slash      TokenType = "SLASH"
+	LeftParen  TokenType = "LEFT_PAREN"
+	RightParen TokenType = "RIGHT_PAREN"
+	LeftBrace  TokenType = "LEFT_BRACE"
+	RightBrace TokenType = "RIGHT_BRACE"
+	Star       TokenType = "STAR"
+	Dot        TokenType = "DOT"
+	Comma      TokenType = "COMMA"
+	Plus       TokenType = "PLUS"
+	Minus      TokenType = "MINUS"
+	Semicolon  TokenType = "SEMICOLON"
+	Slash      TokenType = "SLASH"
 
 	// one or two character tokens
-	bang         TokenType = "BANG"
-	bangEqual    TokenType = "BANG_EQUAL"
-	equal        TokenType = "EQUAL"
-	equalEqual   TokenType = "EQUAL_EQUAL"
-	greater      TokenType = "GREATER"
-	greaterEqual TokenType = "GREATER_EQUAL"
-	less         TokenType = "LESS"
-	lessEqual    TokenType = "LESS_EQUAL"
+	Bang         TokenType = "BANG"
+	BangEqual    TokenType = "BANG_EQUAL"
+	Equal        TokenType = "EQUAL"
+	EqualEqual   TokenType = "EQUAL_EQUAL"
+	Greater      TokenType = "GREATER"
+	GreaterEqual TokenType = "GREATER_EQUAL"
+	Less         TokenType = "LESS"
+	LessEqual    TokenType = "LESS_EQUAL"
 
 	// literals
-	identifier TokenType = "IDENTIFIER"
-	stringTok  TokenType = "STRING"
-	number     TokenType = "NUMBER"
+	Identifier  TokenType = "IDENTIFIER"
+	StringToken TokenType = "STRING"
+	Number      TokenType = "NUMBER"
 
-	eof TokenType = "EOF"
+	// keywords
+	AndToken    TokenType = "AND"
+	ClassToken  TokenType = "CLASS"
+	ElseToken   TokenType = "ELSE"
+	FalseToken  TokenType = "FALSE"
+	FunToken    TokenType = "FUN"
+	ForToken    TokenType = "FOR"
+	IfToken     TokenType = "IF"
+	NilToken    TokenType = "NIL"
+	OrToken     TokenType = "OR"
+	PrintToken  TokenType = "PRINT"
+	ReturnToken TokenType = "RETURN"
+	SuperToken  TokenType = "SUPER"
+	ThisToken   TokenType = "THIS"
+	TrueToken   TokenType = "TRUE"
+	VarToken    TokenType = "VAR"
+	WhileToken  TokenType = "WHILE"
+
+	Eof        TokenType = "EOF"
+	ErrorToken TokenType = "ERROR"
 )
 
+var reservedKeywords = map[string]TokenType{
+	"and":    AndToken,
+	"class":  ClassToken,
+	"else":   ElseToken,
+	"false":  FalseToken,
+	"fun":    FunToken,
+	"for":    ForToken,
+	"if":     IfToken,
+	"nil":    NilToken,
+	"or":     OrToken,
+	"print":  PrintToken,
+	"return": ReturnToken,
+	"super":  SuperToken,
+	"this":   ThisToken,
+	"true":   TrueToken,
+	"var":    VarToken,
+	"while":  WhileToken,
+}
+
 type Token struct {
-	tokenType TokenType
-	lexeme    string
-	literal   string
+	TokenType TokenType
+	Lexeme    string
+	Literal   interface{}
+}
+
+func (t *Token) IsToken(tokenType TokenType) bool {
+	return t.TokenType == tokenType
 }
 
 func (t *Token) ToString() string {
-	literal := t.literal
-	if t.literal == "" {
+	literal := ""
+	if t.TokenType == Number {
+		num := t.Literal.(float64)
+		if num == float64(int64(num)) {
+			literal = fmt.Sprintf("%.1f", num)
+		} else {
+			literal = fmt.Sprintf("%g", num)
+		}
+	} else if t.Literal == nil {
 		literal = "null"
+	} else if t.TokenType == StringToken {
+		literal = t.Literal.(string)
 	}
-	return string(t.tokenType) + " " + t.lexeme + " " + literal
+	return string(t.TokenType) + " " + t.Lexeme + " " + literal
 }
 
 type Lexar struct {
 	input []byte
 	index int
+	start int
 	line  int
 }
 
@@ -70,9 +123,16 @@ func (l *Lexar) next() byte {
 
 func (l *Lexar) peek() byte {
 	if l.eof() {
-		return '$'
+		return 0
 	}
 	return l.input[l.index]
+}
+
+func (l *Lexar) peekNext() byte {
+	if l.index+1 >= len(l.input) {
+		return 0
+	}
+	return l.input[l.index+1]
 }
 
 func NewLexar(input []byte) *Lexar {
@@ -96,121 +156,146 @@ func isNumber(char byte) bool {
 	return char >= '0' && char <= '9'
 }
 
+func (l *Lexar) NextToken() Token {
+	l.start = l.index
+	inputChar := l.next()
+	token := Token{}
+	switch inputChar {
+	case '(':
+		token.TokenType = LeftParen
+	case ')':
+		token.TokenType = RightParen
+	case '{':
+		token.TokenType = LeftBrace
+	case '}':
+		token.TokenType = RightBrace
+	case '*':
+		token.TokenType = Star
+	case '+':
+		token.TokenType = Plus
+	case ',':
+		token.TokenType = Comma
+	case '.':
+		token.TokenType = Dot
+	case '-':
+		token.TokenType = Minus
+	case ';':
+		token.TokenType = Semicolon
+	case '\n':
+		l.line++
+		return l.NextToken()
+	case '=':
+		token.TokenType = Equal
+		if l.match('=') {
+			token.TokenType = EqualEqual
+		}
+	case '!':
+		token.TokenType = Bang
+		if l.match('=') {
+			token.TokenType = BangEqual
+		}
+	case '>':
+		token.TokenType = Greater
+		if l.match('=') {
+			token.TokenType = GreaterEqual
+		}
+	case '<':
+		token.TokenType = Less
+		if l.match('=') {
+			token.TokenType = LessEqual
+		}
+	case '\t', ' ', '\r':
+		return l.NextToken()
+	case '"':
+		for l.peek() != '"' && !l.eof() {
+			l.next()
+		}
+		token.TokenType = StringToken
+		token.Literal = string(l.input[l.start+1 : l.index])
+
+		if l.peek() != '"' {
+			token.TokenType = ErrorToken
+			token.Literal = fmt.Errorf("[line %d] Error: Unterminated string.", l.line)
+		}
+		l.next()
+
+	case '/':
+		if l.match('/') {
+			for l.peek() != '\n' && !l.eof() {
+				// skip comments
+				l.next()
+			}
+			return l.NextToken()
+		}
+		token.TokenType = Slash
+	case 0:
+		token.TokenType = Eof
+	default:
+		if isNumber(inputChar) {
+			token.TokenType = Number
+			token.Literal = l.parseNumber()
+
+		} else if isAlpha(inputChar) {
+			for isAlphaNumeric(l.peek()) {
+				l.next()
+			}
+			if val, ok := reservedKeywords[string(l.input[l.start:l.index])]; ok {
+				token.TokenType = val
+			} else {
+				token.TokenType = Identifier
+			}
+		} else {
+			token.TokenType = ErrorToken
+			token.Literal = fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar))
+		}
+	}
+
+	token.Lexeme = string(l.input[l.start:l.index])
+
+	return token
+
+}
 func (l *Lexar) Scan() ([]Token, []error) {
 	tokens := []Token{}
 	errorArr := []error{}
-	for !l.eof() {
-		currentIndex := l.index
-		inputChar := l.next()
-		token := Token{}
-		switch inputChar {
-		case '(':
-			token.tokenType = leftParen
-		case ')':
-			token.tokenType = rightParen
-		case '{':
-			token.tokenType = leftBrace
-		case '}':
-			token.tokenType = rightBrace
-		case '*':
-			token.tokenType = star
-		case '+':
-			token.tokenType = plus
-		case ',':
-			token.tokenType = comma
-		case '.':
-			token.tokenType = dot
-		case '-':
-			token.tokenType = minus
-		case ';':
-			token.tokenType = semicolon
-		case '\n':
-			l.line++
-			continue
-		case '=':
-			token.tokenType = equal
-			if l.match('=') {
-				token.tokenType = equalEqual
-			}
-		case '!':
-			token.tokenType = bang
-			if l.match('=') {
-				token.tokenType = bangEqual
-			}
-		case '>':
-			token.tokenType = greater
-			if l.match('=') {
-				token.tokenType = greaterEqual
-			}
-		case '<':
-			token.tokenType = less
-			if l.match('=') {
-				token.tokenType = lessEqual
-			}
-		case '\t', ' ', '\r':
-			continue
-		case '"':
-			for l.peek() != '"' && !l.eof() {
-				l.next()
-			}
-			token.tokenType = stringTok
-			token.literal = string(l.input[currentIndex+1 : l.index])
-
-			if l.peek() != '"' {
-				errorArr = append(errorArr, fmt.Errorf("[line %d] Error: Unterminated string.", l.line))
-				continue
-			}
-			l.next()
-
-		case '/':
-			if l.match('/') {
-				for l.peek() != '\n' && !l.eof() {
-					// skip comments
-					l.next()
-				}
-				continue
-			}
-			token.tokenType = slash
-		default:
-			if isNumber(inputChar) {
-				err := l.parseNumber()
-				if err != nil {
-					errorArr = append(errorArr, fmt.Errorf("[line %d] Error: %v val: %v", l.line, err.Error(), string(l.input[currentIndex:l.index])))
-					continue
-				}
-				token.tokenType = number
-				token.literal = string(l.input[currentIndex:l.index])
-			} else {
-				errorArr = append(errorArr, fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar)))
-				continue
-			}
+	token := l.NextToken()
+	for token.TokenType != Eof {
+		if token.TokenType == ErrorToken {
+			errorArr = append(errorArr, token.Literal.(error))
+		} else {
+			tokens = append(tokens, token)
 		}
-		token.lexeme = string(l.input[currentIndex:l.index])
-		tokens = append(tokens, token)
+		token = l.NextToken()
 	}
-	tokens = append(tokens, Token{tokenType: eof, lexeme: ""})
+
+	tokens = append(tokens, Token{TokenType: Eof, Lexeme: ""})
 
 	return tokens, errorArr
 }
 
-func (l *Lexar) parseNumber() error {
+func isAlphaNumeric(char byte) bool {
+	return isAlpha(char) || isNumber(char)
+}
+
+func isAlpha(char byte) bool {
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_'
+}
+
+func (l *Lexar) parseNumber() float64 {
 	for isNumber(l.peek()) {
 		l.next()
 	}
 
-	if l.peek() != '.' {
-		return nil
-	}
-
-	l.next()
-
-	if !isNumber(l.peek()) {
-		return fmt.Errorf("Invalid number")
-	}
-
-	for isNumber(l.peek()) {
+	if l.peek() == '.' && isNumber(l.peekNext()) {
 		l.next()
+
+		for isNumber(l.peek()) {
+			l.next()
+		}
 	}
 
-	return nil
+	// dont need to handle error we check validate it above
+	num, _ := strconv.ParseFloat(string(l.input[l.start:l.index]), 64)
+
+	return num
 }

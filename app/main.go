@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/parser"
 )
 
 func main() {
@@ -17,17 +18,34 @@ func main() {
 
 	command := os.Args[1]
 
-	if command != "tokenize" {
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
-		os.Exit(1)
-	}
-
 	filename := os.Args[2]
 	fileContents, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		os.Exit(1)
 	}
+
+	switch command {
+	case "tokenize":
+		tokenizer(fileContents)
+	case "parse":
+		parse(fileContents)
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
+		os.Exit(1)
+	}
+}
+
+func parse(fileContents []byte) {
+	lexarInstance := lexar.NewLexar(fileContents)
+	parserInstance := parser.NewParser(*lexarInstance)
+
+	data := parserInstance.Parse()
+	fmt.Println(data.String())
+
+}
+
+func tokenizer(fileContents []byte) {
 
 	lexarInstance := lexar.NewLexar(fileContents)
 
