@@ -2,107 +2,11 @@ package lexar
 
 import (
 	"fmt"
+
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
+
 	"strconv"
 )
-
-type TokenType string
-
-const (
-	// single character tokens
-	LeftParen  TokenType = "LEFT_PAREN"
-	RightParen TokenType = "RIGHT_PAREN"
-	LeftBrace  TokenType = "LEFT_BRACE"
-	RightBrace TokenType = "RIGHT_BRACE"
-	Star       TokenType = "STAR"
-	Dot        TokenType = "DOT"
-	Comma      TokenType = "COMMA"
-	Plus       TokenType = "PLUS"
-	Minus      TokenType = "MINUS"
-	Semicolon  TokenType = "SEMICOLON"
-	Slash      TokenType = "SLASH"
-
-	// one or two character tokens
-	Bang         TokenType = "BANG"
-	BangEqual    TokenType = "BANG_EQUAL"
-	Equal        TokenType = "EQUAL"
-	EqualEqual   TokenType = "EQUAL_EQUAL"
-	Greater      TokenType = "GREATER"
-	GreaterEqual TokenType = "GREATER_EQUAL"
-	Less         TokenType = "LESS"
-	LessEqual    TokenType = "LESS_EQUAL"
-
-	// literals
-	Identifier  TokenType = "IDENTIFIER"
-	StringToken TokenType = "STRING"
-	Number      TokenType = "NUMBER"
-
-	// keywords
-	AndToken    TokenType = "AND"
-	ClassToken  TokenType = "CLASS"
-	ElseToken   TokenType = "ELSE"
-	FalseToken  TokenType = "FALSE"
-	FunToken    TokenType = "FUN"
-	ForToken    TokenType = "FOR"
-	IfToken     TokenType = "IF"
-	NilToken    TokenType = "NIL"
-	OrToken     TokenType = "OR"
-	PrintToken  TokenType = "PRINT"
-	ReturnToken TokenType = "RETURN"
-	SuperToken  TokenType = "SUPER"
-	ThisToken   TokenType = "THIS"
-	TrueToken   TokenType = "TRUE"
-	VarToken    TokenType = "VAR"
-	WhileToken  TokenType = "WHILE"
-
-	Eof        TokenType = "EOF"
-	ErrorToken TokenType = "ERROR"
-)
-
-var reservedKeywords = map[string]TokenType{
-	"and":    AndToken,
-	"class":  ClassToken,
-	"else":   ElseToken,
-	"false":  FalseToken,
-	"fun":    FunToken,
-	"for":    ForToken,
-	"if":     IfToken,
-	"nil":    NilToken,
-	"or":     OrToken,
-	"print":  PrintToken,
-	"return": ReturnToken,
-	"super":  SuperToken,
-	"this":   ThisToken,
-	"true":   TrueToken,
-	"var":    VarToken,
-	"while":  WhileToken,
-}
-
-type Token struct {
-	TokenType TokenType
-	Lexeme    string
-	Literal   interface{}
-}
-
-func (t *Token) IsToken(tokenType TokenType) bool {
-	return t.TokenType == tokenType
-}
-
-func (t *Token) ToString() string {
-	literal := ""
-	if t.TokenType == Number {
-		num := t.Literal.(float64)
-		if num == float64(int64(num)) {
-			literal = fmt.Sprintf("%.1f", num)
-		} else {
-			literal = fmt.Sprintf("%g", num)
-		}
-	} else if t.Literal == nil {
-		literal = "null"
-	} else if t.TokenType == StringToken {
-		literal = t.Literal.(string)
-	}
-	return string(t.TokenType) + " " + t.Lexeme + " " + literal
-}
 
 type Lexar struct {
 	input []byte
@@ -156,53 +60,53 @@ func isNumber(char byte) bool {
 	return char >= '0' && char <= '9'
 }
 
-func (l *Lexar) NextToken() Token {
+func (l *Lexar) NextToken() token.Token {
 	l.start = l.index
 	inputChar := l.next()
-	token := Token{}
+	currToken := token.Token{}
 	switch inputChar {
 	case '(':
-		token.TokenType = LeftParen
+		currToken.TokenType = token.LeftParen
 	case ')':
-		token.TokenType = RightParen
+		currToken.TokenType = token.RightParen
 	case '{':
-		token.TokenType = LeftBrace
+		currToken.TokenType = token.LeftBrace
 	case '}':
-		token.TokenType = RightBrace
+		currToken.TokenType = token.RightBrace
 	case '*':
-		token.TokenType = Star
+		currToken.TokenType = token.Star
 	case '+':
-		token.TokenType = Plus
+		currToken.TokenType = token.Plus
 	case ',':
-		token.TokenType = Comma
+		currToken.TokenType = token.Comma
 	case '.':
-		token.TokenType = Dot
+		currToken.TokenType = token.Dot
 	case '-':
-		token.TokenType = Minus
+		currToken.TokenType = token.Minus
 	case ';':
-		token.TokenType = Semicolon
+		currToken.TokenType = token.Semicolon
 	case '\n':
 		l.line++
 		return l.NextToken()
 	case '=':
-		token.TokenType = Equal
+		currToken.TokenType = token.Equal
 		if l.match('=') {
-			token.TokenType = EqualEqual
+			currToken.TokenType = token.EqualEqual
 		}
 	case '!':
-		token.TokenType = Bang
+		currToken.TokenType = token.Bang
 		if l.match('=') {
-			token.TokenType = BangEqual
+			currToken.TokenType = token.BangEqual
 		}
 	case '>':
-		token.TokenType = Greater
+		currToken.TokenType = token.Greater
 		if l.match('=') {
-			token.TokenType = GreaterEqual
+			currToken.TokenType = token.GreaterEqual
 		}
 	case '<':
-		token.TokenType = Less
+		currToken.TokenType = token.Less
 		if l.match('=') {
-			token.TokenType = LessEqual
+			currToken.TokenType = token.LessEqual
 		}
 	case '\t', ' ', '\r':
 		return l.NextToken()
@@ -210,12 +114,12 @@ func (l *Lexar) NextToken() Token {
 		for l.peek() != '"' && !l.eof() {
 			l.next()
 		}
-		token.TokenType = StringToken
-		token.Literal = string(l.input[l.start+1 : l.index])
+		currToken.TokenType = token.StringToken
+		currToken.Literal = string(l.input[l.start+1 : l.index])
 
 		if l.peek() != '"' {
-			token.TokenType = ErrorToken
-			token.Literal = fmt.Errorf("[line %d] Error: Unterminated string.", l.line)
+			currToken.TokenType = token.ErrorToken
+			currToken.Literal = fmt.Errorf("[line %d] Error: Unterminated string.", l.line)
 		}
 		l.next()
 
@@ -227,48 +131,49 @@ func (l *Lexar) NextToken() Token {
 			}
 			return l.NextToken()
 		}
-		token.TokenType = Slash
+		currToken.TokenType = token.Slash
 	case 0:
-		token.TokenType = Eof
+		currToken.TokenType = token.Eof
 	default:
 		if isNumber(inputChar) {
-			token.TokenType = Number
-			token.Literal = l.parseNumber()
+			tokenType, literal := l.parseNumber()
+			currToken.TokenType = tokenType
+			currToken.Literal = literal
 
 		} else if isAlpha(inputChar) {
 			for isAlphaNumeric(l.peek()) {
 				l.next()
 			}
-			if val, ok := reservedKeywords[string(l.input[l.start:l.index])]; ok {
-				token.TokenType = val
+			if val, ok := token.ReservedKeywords[string(l.input[l.start:l.index])]; ok {
+				currToken.TokenType = val
 			} else {
-				token.TokenType = Identifier
+				currToken.TokenType = token.Identifier
 			}
 		} else {
-			token.TokenType = ErrorToken
-			token.Literal = fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar))
+			currToken.TokenType = token.ErrorToken
+			currToken.Literal = fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar))
 		}
 	}
 
-	token.Lexeme = string(l.input[l.start:l.index])
+	currToken.Lexeme = string(l.input[l.start:l.index])
 
-	return token
+	return currToken
 
 }
-func (l *Lexar) Scan() ([]Token, []error) {
-	tokens := []Token{}
+func (l *Lexar) Scan() ([]token.Token, []error) {
+	tokens := []token.Token{}
 	errorArr := []error{}
-	token := l.NextToken()
-	for token.TokenType != Eof {
-		if token.TokenType == ErrorToken {
-			errorArr = append(errorArr, token.Literal.(error))
+	currToken := l.NextToken()
+	for currToken.TokenType != token.Eof {
+		if currToken.TokenType == token.ErrorToken {
+			errorArr = append(errorArr, currToken.Literal.(error))
 		} else {
-			tokens = append(tokens, token)
+			tokens = append(tokens, currToken)
 		}
-		token = l.NextToken()
+		currToken = l.NextToken()
 	}
 
-	tokens = append(tokens, Token{TokenType: Eof, Lexeme: ""})
+	tokens = append(tokens, token.Token{TokenType: token.Eof, Lexeme: ""})
 
 	return tokens, errorArr
 }
@@ -281,7 +186,7 @@ func isAlpha(char byte) bool {
 	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_'
 }
 
-func (l *Lexar) parseNumber() float64 {
+func (l *Lexar) parseNumber() (token.TokenType, interface{}) {
 	for isNumber(l.peek()) {
 		l.next()
 	}
@@ -292,10 +197,13 @@ func (l *Lexar) parseNumber() float64 {
 		for isNumber(l.peek()) {
 			l.next()
 		}
+	} else {
+		valInt64, _ := strconv.ParseInt(string(l.input[l.start:l.index]), 10, 64)
+		return token.NumberInt, valInt64
 	}
 
 	// dont need to handle error we check validate it above
 	num, _ := strconv.ParseFloat(string(l.input[l.start:l.index]), 64)
 
-	return num
+	return token.NumberFloat, num
 }

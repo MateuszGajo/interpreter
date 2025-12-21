@@ -3,12 +3,15 @@ package lexar
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
+
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
 
 type TestCase struct {
 	input  string
-	output []Token
+	output []token.Token
 	errors []error
 }
 
@@ -16,129 +19,129 @@ func TestLexar(t *testing.T) {
 	cases := []TestCase{
 		{
 			input: "(()",
-			output: []Token{
-				{TokenType: LeftParen, Lexeme: "(", Literal: nil},
-				{TokenType: LeftParen, Lexeme: "(", Literal: nil},
-				{TokenType: RightParen, Lexeme: ")", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.LeftParen, Lexeme: "(", Literal: nil},
+				{TokenType: token.LeftParen, Lexeme: "(", Literal: nil},
+				{TokenType: token.RightParen, Lexeme: ")", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
 			input: "{{}}",
-			output: []Token{
-				{TokenType: LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: RightBrace, Lexeme: "}", Literal: nil},
-				{TokenType: RightBrace, Lexeme: "}", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
 			input: "({*.,+*-;})",
-			output: []Token{
-				{TokenType: LeftParen, Lexeme: "(", Literal: nil},
-				{TokenType: LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: Star, Lexeme: "*", Literal: nil},
-				{TokenType: Dot, Lexeme: ".", Literal: nil},
-				{TokenType: Comma, Lexeme: ",", Literal: nil},
-				{TokenType: Plus, Lexeme: "+", Literal: nil},
-				{TokenType: Star, Lexeme: "*", Literal: nil},
-				{TokenType: Minus, Lexeme: "-", Literal: nil},
-				{TokenType: Semicolon, Lexeme: ";", Literal: nil},
-				{TokenType: RightBrace, Lexeme: "}", Literal: nil},
-				{TokenType: RightParen, Lexeme: ")", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.LeftParen, Lexeme: "(", Literal: nil},
+				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.Star, Lexeme: "*", Literal: nil},
+				{TokenType: token.Dot, Lexeme: ".", Literal: nil},
+				{TokenType: token.Comma, Lexeme: ",", Literal: nil},
+				{TokenType: token.Plus, Lexeme: "+", Literal: nil},
+				{TokenType: token.Star, Lexeme: "*", Literal: nil},
+				{TokenType: token.Minus, Lexeme: "-", Literal: nil},
+				{TokenType: token.Semicolon, Lexeme: ";", Literal: nil},
+				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.RightParen, Lexeme: ")", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
 			input: "{{$}}#",
-			output: []Token{
-				{TokenType: LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: RightBrace, Lexeme: "}", Literal: nil},
-				{TokenType: RightBrace, Lexeme: "}", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 			errors: []error{errors.New("[line 1] Error: Unexpected character: $"), errors.New("[line 1] Error: Unexpected character: #")},
 		},
 		{
 			input: "==,=,!!==,>>=<<=",
-			output: []Token{
-				{TokenType: EqualEqual, Lexeme: "==", Literal: nil},
-				{TokenType: Comma, Lexeme: ",", Literal: nil},
-				{TokenType: Equal, Lexeme: "=", Literal: nil},
-				{TokenType: Comma, Lexeme: ",", Literal: nil},
-				{TokenType: Bang, Lexeme: "!", Literal: nil},
-				{TokenType: BangEqual, Lexeme: "!=", Literal: nil},
-				{TokenType: Equal, Lexeme: "=", Literal: nil},
-				{TokenType: Comma, Lexeme: ",", Literal: nil},
-				{TokenType: Greater, Lexeme: ">", Literal: nil},
-				{TokenType: GreaterEqual, Lexeme: ">=", Literal: nil},
-				{TokenType: Less, Lexeme: "<", Literal: nil},
-				{TokenType: LessEqual, Lexeme: "<=", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.EqualEqual, Lexeme: "==", Literal: nil},
+				{TokenType: token.Comma, Lexeme: ",", Literal: nil},
+				{TokenType: token.Equal, Lexeme: "=", Literal: nil},
+				{TokenType: token.Comma, Lexeme: ",", Literal: nil},
+				{TokenType: token.Bang, Lexeme: "!", Literal: nil},
+				{TokenType: token.BangEqual, Lexeme: "!=", Literal: nil},
+				{TokenType: token.Equal, Lexeme: "=", Literal: nil},
+				{TokenType: token.Comma, Lexeme: ",", Literal: nil},
+				{TokenType: token.Greater, Lexeme: ">", Literal: nil},
+				{TokenType: token.GreaterEqual, Lexeme: ">=", Literal: nil},
+				{TokenType: token.Less, Lexeme: "<", Literal: nil},
+				{TokenType: token.LessEqual, Lexeme: "<=", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
 			input: "/,\n//coMment\n,\t \r",
-			output: []Token{
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Comma, Lexeme: ",", Literal: nil},
-				{TokenType: Comma, Lexeme: ",", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.Comma, Lexeme: ",", Literal: nil},
+				{TokenType: token.Comma, Lexeme: ",", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
 			input: "/\",,123\"/",
-			output: []Token{
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: StringToken, Lexeme: "\",,123\"", Literal: ",,123"},
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.StringToken, Lexeme: "\",,123\"", Literal: ",,123"},
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
 			input: "\"baz\" . \"unterminated",
-			output: []Token{
-				{TokenType: StringToken, Lexeme: "\"baz\"", Literal: "baz"},
-				{TokenType: Dot, Lexeme: ".", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.StringToken, Lexeme: "\"baz\"", Literal: "baz"},
+				{TokenType: token.Dot, Lexeme: ".", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 			errors: []error{errors.New("[line 1] Error: Unterminated string.")},
 		},
 		{
 			input: "/123.123/134/123.00000",
-			output: []Token{
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Number, Lexeme: "123.123", Literal: 123.123},
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Number, Lexeme: "134", Literal: 134.0},
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Number, Lexeme: "123.00000", Literal: 123.0},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.NumberFloat, Lexeme: "123.123", Literal: 123.123},
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.NumberInt, Lexeme: "134", Literal: int64(134)},
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.NumberFloat, Lexeme: "123.00000", Literal: 123.0},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
 			input: "/foo bar foo_123/",
-			output: []Token{
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Identifier, Lexeme: "foo", Literal: nil},
-				{TokenType: Identifier, Lexeme: "bar", Literal: nil},
-				{TokenType: Identifier, Lexeme: "foo_123", Literal: nil},
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			output: []token.Token{
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.Identifier, Lexeme: "foo", Literal: nil},
+				{TokenType: token.Identifier, Lexeme: "bar", Literal: nil},
+				{TokenType: token.Identifier, Lexeme: "foo_123", Literal: nil},
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 		{
-			input: "/foo whiLe foo_123/ nil",
-			output: []Token{
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: Identifier, Lexeme: "foo", Literal: nil},
-				{TokenType: WhileToken, Lexeme: "while", Literal: nil},
-				{TokenType: Identifier, Lexeme: "foo_123", Literal: nil},
-				{TokenType: Slash, Lexeme: "/", Literal: nil},
-				{TokenType: NilToken, Lexeme: "nil", Literal: nil},
-				{TokenType: Eof, Lexeme: "", Literal: nil},
+			input: "/foo while foo_123/ nil",
+			output: []token.Token{
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.Identifier, Lexeme: "foo", Literal: nil},
+				{TokenType: token.WhileToken, Lexeme: "while", Literal: nil},
+				{TokenType: token.Identifier, Lexeme: "foo_123", Literal: nil},
+				{TokenType: token.Slash, Lexeme: "/", Literal: nil},
+				{TokenType: token.NilToken, Lexeme: "nil", Literal: nil},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
 	}
@@ -173,6 +176,8 @@ func TestLexar(t *testing.T) {
 
 				if expected != got {
 					t.Errorf("\ntoken[%d] mismatch:\n  expected: %+v\n got:      %+v", i, expected, got)
+					t.Errorf("\n token lexeme type expected: %v, got: %v", reflect.TypeOf(expected.Lexeme), reflect.TypeOf(got.Lexeme))
+					t.Errorf("\n token literal type expected: %v, got: %v", reflect.TypeOf(expected.Literal), reflect.TypeOf(got.Literal))
 				}
 			}
 		})

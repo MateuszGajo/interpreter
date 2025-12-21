@@ -6,6 +6,7 @@ import (
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/parser"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
 
 func main() {
@@ -56,8 +57,12 @@ func tokenizer(fileContents []byte) {
 	}
 	os.Stderr.Sync()
 
-	for _, token := range tokens {
-		fmt.Println(token.ToString())
+	for _, currToken := range tokens {
+		tokType := string(currToken.TokenType)
+		if currToken.TokenType == token.NumberFloat || currToken.TokenType == token.NumberInt {
+			tokType = "NUMBER"
+		}
+		fmt.Println(tokType + " " + currToken.Lexeme + " " + currToken.ToString())
 	}
 
 	if len(errors) != 0 {

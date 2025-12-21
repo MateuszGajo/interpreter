@@ -1,6 +1,12 @@
 package parser
 
-import "github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
+import (
+	"fmt"
+
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
+)
 
 //
 // let <identifier> = <expression>
@@ -22,31 +28,9 @@ import "github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
 // phase 1 only literals
 // literals -> "true" | "false" | "nil"
 
-type ASTExpression interface {
-	expression()
-	String() string
-}
-
-type ASTBoolean struct {
-	value bool
-	token lexar.Token
-}
-
-func (astBool ASTBoolean) expression() {}
-func (astBool ASTBoolean) String() string {
-	return astBool.token.Lexeme
-}
-
-type ASTNil struct{}
-
-func (astNil ASTNil) expression() {}
-func (astNil ASTNil) String() string {
-	return "nil"
-}
-
 type Parser struct {
 	lexar     lexar.Lexar
-	currToken lexar.Token
+	currToken token.Token
 }
 
 func NewParser(lexar lexar.Lexar) *Parser {
@@ -62,29 +46,64 @@ func (p *Parser) next() {
 	p.currToken = p.lexar.NextToken()
 }
 
-func (p *Parser) Parse() ASTExpression {
-	for p.currToken.TokenType != lexar.Eof {
+func (p *Parser) Parse() ast.Expression {
+	for p.currToken.TokenType != token.Eof {
 		return p.parseExpression()
 		p.next()
 	}
 	panic("")
 }
 
-func (p *Parser) parseExpression() ASTExpression {
+func (p *Parser) parseExpression() ast.Expression {
 	switch p.currToken.TokenType {
-	case lexar.TrueToken, lexar.FalseToken:
+	case token.TrueToken, token.FalseToken:
 		return p.parseBool()
-	case lexar.NilToken:
+	case token.NilToken:
 		return p.parseNil()
+	case token.NumberInt:
+		return p.parseInt()
+	case token.NumberFloat:
+		return p.parseFloat()
+	case token.StringToken:
+		return p.parseStringLiteral()
+	case token.Identifier:
+		return p.parseIdentifier()
+	case token.LeftParen:
+		p.next()
+		aa := ast.Grouping{
+			Exp: p.parseExpression(),
+		}
+		p.next()
+		if p.currToken.TokenType != token.RightParen {
+			panic("expecting right paren")
+		}
+
+		return aa
 	default:
-		panic("err")
+		panic(fmt.Sprintf("unknown token type: %v", p.currToken.TokenType))
 	}
 }
 
-func (p *Parser) parseBool() ASTBoolean {
-	return ASTBoolean{value: p.currToken.IsToken(lexar.TrueToken), token: p.currToken}
+func (p *Parser) parseIdentifier() ast.Identifier {
+	return ast.Identifier{Value: p.currToken.Lexeme, Token: p.currToken}
 }
 
-func (p *Parser) parseNil() ASTNil {
-	return ASTNil{}
+func (p *Parser) parseStringLiteral() ast.StringLiteral {
+	return ast.StringLiteral{Value: p.currToken.Literal.(string), Token: p.currToken}
+}
+
+func (p *Parser) parseInt() ast.Inteager {
+	return ast.Inteager{Value: p.currToken.Literal.(int64), Token: p.currToken}
+}
+
+func (p *Parser) parseFloat() ast.Float {
+	return ast.Float{Value: p.currToken.Literal.(float64), Token: p.currToken}
+}
+
+func (p *Parser) parseBool() ast.Boolean {
+	return ast.Boolean{Value: p.currToken.IsToken(token.TrueToken), Token: p.currToken}
+}
+
+func (p *Parser) parseNil() ast.Nil {
+	return ast.Nil{}
 }
