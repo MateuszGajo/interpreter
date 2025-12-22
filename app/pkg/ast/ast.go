@@ -66,11 +66,34 @@ func (astIdentifier Identifier) String() string {
 	return astIdentifier.Token.Lexeme
 }
 
-type Grouping struct {
+type GroupingExpression struct {
 	Exp Expression
 }
 
-func (astGrouping Grouping) Expression() {}
-func (astGrouping Grouping) String() string {
-	return "(" + astGrouping.Exp.String() + ")"
+func (astGrouping GroupingExpression) Expression() {}
+func (astGrouping GroupingExpression) String() string {
+	return "(group " + astGrouping.Exp.String() + ")"
+}
+
+type PrefixExpression struct {
+	Operator string
+	Token    token.Token
+	Right    Expression
+}
+
+func (astPrefixExpression PrefixExpression) Expression() {}
+func (astPrefixExpression PrefixExpression) String() string {
+	return "(" + astPrefixExpression.Operator + " " + astPrefixExpression.Right.String() + ")"
+}
+
+type TreeExpression struct {
+	Operator string
+	Token    token.Token
+	Right    Expression
+	Left     Expression
+}
+
+func (astPrefixExpression TreeExpression) Expression() {}
+func (astTreeExpression TreeExpression) String() string {
+	return "(" + astTreeExpression.Operator + " " + astTreeExpression.Left.String() + " " + astTreeExpression.Right.String() + ")"
 }

@@ -134,6 +134,7 @@ func (l *Lexar) NextToken() token.Token {
 		currToken.TokenType = token.Slash
 	case 0:
 		currToken.TokenType = token.Eof
+		return currToken
 	default:
 		if isNumber(inputChar) {
 			tokenType, literal := l.parseNumber()

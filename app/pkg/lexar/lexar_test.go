@@ -144,6 +144,17 @@ func TestLexar(t *testing.T) {
 				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
+		{
+			input: "1+3/5",
+			output: []token.Token{
+				{TokenType: token.NumberInt, Lexeme: "1", Literal: int64(1)},
+				{TokenType: token.Plus, Lexeme: "+"},
+				{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)},
+				{TokenType: token.Slash, Lexeme: "/"},
+				{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)},
+				{TokenType: token.Eof, Lexeme: "", Literal: nil},
+			},
+		},
 	}
 
 	for _, testCase := range cases {

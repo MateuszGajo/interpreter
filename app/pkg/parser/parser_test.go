@@ -3,28 +3,64 @@ package parser
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
 
-func TestParser(t *testing.T) {
+func TestParserExpression(t *testing.T) {
 
 	tests := []struct {
 		input       string
-		expectedVal interface{}
+		expectedVal ast.Expression
 	}{
-		{input: "true", expectedVal: true},
-		{input: "false", expectedVal: false},
-		{input: "nil"},
-		{input: "123.0", expectedVal: 123.0},
-		{input: "123.12", expectedVal: 123.12},
-		{input: "123", expectedVal: int64(123)},
-		{input: "\"123\"", expectedVal: "123"},
-		{input: "let", expectedVal: "let"},
-		{input: "(let)", expectedVal: "(let)"},
+		{input: "true", expectedVal: ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}}},
+		{input: "false", expectedVal: ast.Boolean{Value: false, Token: token.Token{TokenType: token.FalseToken, Lexeme: "false", Literal: nil}}},
+		{input: "nil", expectedVal: ast.Nil{}},
+		{input: "123.0", expectedVal: ast.Float{Value: 123, Token: token.Token{TokenType: token.NumberFloat, Lexeme: "123.0", Literal: 123.0}}},
+		{input: "123.12", expectedVal: ast.Float{Value: 123.12, Token: token.Token{TokenType: token.NumberFloat, Lexeme: "123.12", Literal: 123.12}}},
+		{input: "123", expectedVal: ast.Inteager{Value: 123, Token: token.Token{TokenType: token.NumberInt, Lexeme: "123", Literal: int64(123)}}},
+		{input: "\"123\"", expectedVal: ast.StringLiteral{Value: "123", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"123\"", Literal: "123"}}},
+		{input: "let", expectedVal: ast.Identifier{Value: "let", Token: token.Token{TokenType: token.Identifier, Lexeme: "let", Literal: nil}}},
+		{input: "(let)", expectedVal: ast.GroupingExpression{Exp: ast.Identifier{Value: "let", Token: token.Token{TokenType: token.Identifier, Lexeme: "let", Literal: nil}}}},
+		{input: "!true", expectedVal: ast.PrefixExpression{
+			Right:    ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
+			Operator: "!",
+			Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
+		}},
+		{input: "!!true", expectedVal: ast.PrefixExpression{
+			Right: ast.PrefixExpression{
+				Right:    ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
+				Operator: "!",
+				Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
+			},
+			Operator: "!",
+			Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
+		}},
+		{input: "!!(true)", expectedVal: ast.PrefixExpression{
+			Right: ast.PrefixExpression{
+				Right: ast.GroupingExpression{
+					Exp: ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
+				},
+				Operator: "!",
+				Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
+			},
+			Operator: "!",
+			Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
+		}},
+		{input: "(!!true)", expectedVal: ast.GroupingExpression{
+			Exp: ast.PrefixExpression{
+				Right: ast.PrefixExpression{
+					Right:    ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
+					Operator: "!",
+					Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
+				},
+				Operator: "!",
+				Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
+			}},
+		},
 	}
 
 	for _, testCase := range tests {
@@ -33,124 +69,120 @@ func TestParser(t *testing.T) {
 			parser := NewParser(*lexar)
 
 			resp := parser.Parse()
-			var err error = testaa(resp, testCase.input, testCase.expectedVal)
 
-			if err != nil {
-				t.Error(err.Error())
+			if !reflect.DeepEqual(resp, testCase.expectedVal) {
+				t.Errorf("Expected to get:\n %#v, got: \n%#v", testCase.expectedVal, resp)
 			}
 		})
 	}
 }
 
-func testaa(astNode ast.Expression, input string, expectedVal interface{}) error {
-	var err error
-	switch v := expectedVal.(type) {
-	case bool:
-		err = testBoolExpr(astNode, v)
-	case nil:
-		err = testNilExpr(astNode)
-	case int64:
-		err = testIntExpr(astNode, v)
-	case float64:
-		err = testFloatExpr(astNode, v)
-	case string:
-		if strings.Contains(input, "\"") {
-			err = testStringLiteral(astNode, v)
-		} else if strings.Contains(input, "(") {
-			grouping, ok := astNode.(ast.Grouping)
-			if !ok {
-				return fmt.Errorf("Expected gropuing got: %v", reflect.TypeOf(astNode))
+func TestParserExpression2(t *testing.T) {
+
+	tests := []struct {
+		input       string
+		expectedVal ast.Expression
+	}{
+		// {input: "123", expectedVal: ast.Inteager{Value: 123, Token: token.Token{TokenType: token.NumberInt, Lexeme: "123", Literal: int64(123)}}},
+		// {input: "-5", expectedVal: ast.PrefixExpression{
+		// 	Operator: "-",
+		// 	Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+		// 	Right: ast.Inteager{
+		// 		Value: 5,
+		// 		Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)},
+		// 	},
+		// }},
+		// {input: "--5", expectedVal: ast.PrefixExpression{
+		// 	Operator: "-",
+		// 	Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+		// 	Right: ast.PrefixExpression{
+		// 		Operator: "-",
+		// 		Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+		// 		Right: ast.Inteager{
+		// 			Value: 5,
+		// 			Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)},
+		// 		},
+		// 	},
+		// }},
+		// {input: "5+6", expectedVal: ast.TreeExpression{
+		// 	Operator: "+",
+		// 	Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+		// 	Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+		// 	Right:    ast.Inteager{Value: 6, Token: token.Token{TokenType: token.NumberInt, Lexeme: "6", Literal: int64(6)}},
+		// }},
+
+		// {input: "5/2+3", expectedVal: ast.TreeExpression{
+		// 	Operator: "+",
+		// 	Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+		// 	Left: ast.TreeExpression{
+		// 		Operator: "/",
+		// 		Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+		// 		Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+		// 		Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+		// 	},
+		// 	Right: ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+		// }},
+
+		// {input: "2+3/5", expectedVal: ast.TreeExpression{
+		// 	Operator: "+",
+		// 	Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+		// 	Left:     ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+		// 	Right: ast.TreeExpression{
+		// 		Operator: "/",
+		// 		Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+		// 		Left:     ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+		// 		Right:    ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+		// 	},
+		// }},
+		// {input: "5*3/2", expectedVal: ast.TreeExpression{
+		// 	Operator: "/",
+		// 	Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+		// 	Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+		// 	Left: ast.TreeExpression{
+		// 		Operator: "*",
+		// 		Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+		// 		Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+		// 		Right:    ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+		// 	},
+		// }},
+
+		// {input: "51*36/71", expectedVal: ast.TreeExpression{
+		// 	Operator: "/",
+		// 	Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+		// 	Right:    ast.Inteager{Value: 71, Token: token.Token{TokenType: token.NumberInt, Lexeme: "71", Literal: int64(71)}},
+		// 	Left: ast.TreeExpression{
+		// 		Operator: "*",
+		// 		Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+		// 		Left:     ast.Inteager{Value: 51, Token: token.Token{TokenType: token.NumberInt, Lexeme: "51", Literal: int64(51)}},
+		// 		Right:    ast.Inteager{Value: 36, Token: token.Token{TokenType: token.NumberInt, Lexeme: "36", Literal: int64(36)}},
+		// 	},
+		// }},
+
+		{input: "(37 * -21 / (45 * 16))", expectedVal: ast.TreeExpression{
+			Operator: "/",
+			Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+			Right:    ast.Inteager{Value: 71, Token: token.Token{TokenType: token.NumberInt, Lexeme: "71", Literal: int64(71)}},
+			Left: ast.TreeExpression{
+				Operator: "*",
+				Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+				Left:     ast.Inteager{Value: 51, Token: token.Token{TokenType: token.NumberInt, Lexeme: "51", Literal: int64(51)}},
+				Right:    ast.Inteager{Value: 36, Token: token.Token{TokenType: token.NumberInt, Lexeme: "36", Literal: int64(36)}},
+			},
+		}},
+
+		// 51 * 36 / 72
+	}
+
+	for _, testCase := range tests {
+		t.Run(fmt.Sprintf("Running input: %v", testCase.input), func(t *testing.T) {
+			lexar := lexar.NewLexar([]byte(testCase.input))
+			parser := NewParser(*lexar)
+
+			resp := parser.parseExpressionTwo(Lowest)
+
+			if !reflect.DeepEqual(resp, testCase.expectedVal) {
+				t.Errorf("Expected to \nget: %#v, \ngot: %#v", testCase.expectedVal, resp)
 			}
-			if grouping.String() != v {
-				return fmt.Errorf("expected val: %v got:%v", v, grouping.String())
-			}
-
-		} else {
-			err = testIdentifierLiteral(astNode, v)
-		}
-	default:
-		err = fmt.Errorf("unsuported type: %v", reflect.TypeOf(v))
+		})
 	}
-
-	return err
-}
-
-func testIdentifierLiteral(exp ast.Expression, expectedVal string) error {
-	astLiteral, ok := exp.(ast.Identifier)
-
-	if !ok {
-		return fmt.Errorf("Expected to get: %v got: %v", "identifier literal", reflect.TypeOf(exp))
-	}
-
-	if astLiteral.Value != expectedVal {
-		return fmt.Errorf("Expected val:%v, got: %v", expectedVal, astLiteral.Value)
-	}
-
-	return nil
-}
-
-func testStringLiteral(exp ast.Expression, expectedVal string) error {
-	astLiteral, ok := exp.(ast.StringLiteral)
-
-	if !ok {
-		return fmt.Errorf("Expected to get: %v got: %v", "string literal", reflect.TypeOf(exp))
-	}
-
-	if astLiteral.Value != expectedVal {
-		return fmt.Errorf("Expected val:%v, got: %v", expectedVal, astLiteral.Value)
-	}
-
-	return nil
-}
-
-func testFloatExpr(exp ast.Expression, expectedVal float64) error {
-	astBool, ok := exp.(ast.Float)
-
-	if !ok {
-		return fmt.Errorf("Expected to get: %v got: %v", ast.Inteager{}, reflect.TypeOf(exp))
-	}
-
-	if astBool.Value != expectedVal {
-		return fmt.Errorf("Expected val:%v, got: %v", expectedVal, astBool.Value)
-	}
-
-	return nil
-}
-
-func testIntExpr(exp ast.Expression, expectedVal int64) error {
-	astBool, ok := exp.(ast.Inteager)
-
-	if !ok {
-		return fmt.Errorf("Expected to get: %v got: %v", ast.Inteager{}, reflect.TypeOf(exp))
-	}
-
-	if astBool.Value != expectedVal {
-		return fmt.Errorf("Expected val:%v, got: %v", expectedVal, astBool.Value)
-	}
-
-	return nil
-}
-
-func testBoolExpr(exp ast.Expression, expectedVal bool) error {
-	astBool, ok := exp.(ast.Boolean)
-
-	if !ok {
-		return fmt.Errorf("Expected to get astboolean got: %v", reflect.TypeOf(exp))
-	}
-
-	if astBool.Value != expectedVal {
-		return fmt.Errorf("Expected boolean expression val:%v, got: %v", expectedVal, astBool.Value)
-	}
-
-	return nil
-}
-
-func testNilExpr(exp ast.Expression) error {
-	_, ok := exp.(ast.Nil)
-
-	if !ok {
-		return fmt.Errorf("Expected to get astboolean got: %v", reflect.TypeOf(exp))
-	}
-
-	return nil
 }
