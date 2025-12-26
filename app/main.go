@@ -42,11 +42,20 @@ func parse(fileContents []byte) {
 	parserInstance := parser.NewParser(*lexarInstance)
 
 	data := parserInstance.Parse()
-	// aa := data.(ast.TreeExpression)
-	// fmt.Println(aa.Left)
-	// fmt.Println(aa.Right)
-	// fmt.Printf("%+q", data.(ast.TreeExpression))
-	fmt.Println(data.String())
+	for _, err := range parserInstance.Errors() {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+
+	}
+	os.Stderr.Sync()
+
+	if data != nil {
+		fmt.Println(data.String())
+
+	}
+
+	if len(parserInstance.Errors()) != 0 {
+		os.Exit(65)
+	}
 
 }
 

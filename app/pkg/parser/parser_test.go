@@ -83,94 +83,190 @@ func TestParserExpression2(t *testing.T) {
 		input       string
 		expectedVal ast.Expression
 	}{
-		// {input: "123", expectedVal: ast.Inteager{Value: 123, Token: token.Token{TokenType: token.NumberInt, Lexeme: "123", Literal: int64(123)}}},
-		// {input: "-5", expectedVal: ast.PrefixExpression{
-		// 	Operator: "-",
-		// 	Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
-		// 	Right: ast.Inteager{
-		// 		Value: 5,
-		// 		Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)},
-		// 	},
-		// }},
-		// {input: "--5", expectedVal: ast.PrefixExpression{
-		// 	Operator: "-",
-		// 	Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
-		// 	Right: ast.PrefixExpression{
-		// 		Operator: "-",
-		// 		Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
-		// 		Right: ast.Inteager{
-		// 			Value: 5,
-		// 			Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)},
-		// 		},
-		// 	},
-		// }},
-		// {input: "5+6", expectedVal: ast.TreeExpression{
-		// 	Operator: "+",
-		// 	Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
-		// 	Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
-		// 	Right:    ast.Inteager{Value: 6, Token: token.Token{TokenType: token.NumberInt, Lexeme: "6", Literal: int64(6)}},
-		// }},
+		{input: "123", expectedVal: ast.Inteager{Value: 123, Token: token.Token{TokenType: token.NumberInt, Lexeme: "123", Literal: int64(123)}}},
+		{input: "-5", expectedVal: ast.PrefixExpression{
+			Operator: "-",
+			Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+			Right: ast.Inteager{
+				Value: 5,
+				Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)},
+			},
+		}},
+		{input: "--5", expectedVal: ast.PrefixExpression{
+			Operator: "-",
+			Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+			Right: ast.PrefixExpression{
+				Operator: "-",
+				Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+				Right: ast.Inteager{
+					Value: 5,
+					Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)},
+				},
+			},
+		}},
+		{input: "5+6", expectedVal: ast.InfixExpression{
+			Operator: "+",
+			Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+			Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+			Right:    ast.Inteager{Value: 6, Token: token.Token{TokenType: token.NumberInt, Lexeme: "6", Literal: int64(6)}},
+		}},
 
-		// {input: "5/2+3", expectedVal: ast.TreeExpression{
-		// 	Operator: "+",
-		// 	Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
-		// 	Left: ast.TreeExpression{
-		// 		Operator: "/",
-		// 		Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
-		// 		Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
-		// 		Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
-		// 	},
-		// 	Right: ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
-		// }},
+		{input: "5/2+3", expectedVal: ast.InfixExpression{
+			Operator: "+",
+			Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+			Left: ast.InfixExpression{
+				Operator: "/",
+				Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+				Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+				Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+			},
+			Right: ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+		}},
 
-		// {input: "2+3/5", expectedVal: ast.TreeExpression{
-		// 	Operator: "+",
-		// 	Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
-		// 	Left:     ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
-		// 	Right: ast.TreeExpression{
-		// 		Operator: "/",
-		// 		Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
-		// 		Left:     ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
-		// 		Right:    ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
-		// 	},
-		// }},
-		// {input: "5*3/2", expectedVal: ast.TreeExpression{
-		// 	Operator: "/",
-		// 	Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
-		// 	Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
-		// 	Left: ast.TreeExpression{
-		// 		Operator: "*",
-		// 		Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
-		// 		Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
-		// 		Right:    ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
-		// 	},
-		// }},
+		{input: "2+3/5", expectedVal: ast.InfixExpression{
+			Operator: "+",
+			Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+			Left:     ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+			Right: ast.InfixExpression{
+				Operator: "/",
+				Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+				Left:     ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+				Right:    ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+			},
+		}},
+		{input: "5*3/2", expectedVal: ast.InfixExpression{
+			Operator: "/",
+			Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+			Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+			Left: ast.InfixExpression{
+				Operator: "*",
+				Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+				Left:     ast.Inteager{Value: 5, Token: token.Token{TokenType: token.NumberInt, Lexeme: "5", Literal: int64(5)}},
+				Right:    ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+			},
+		}},
 
-		// {input: "51*36/71", expectedVal: ast.TreeExpression{
-		// 	Operator: "/",
-		// 	Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
-		// 	Right:    ast.Inteager{Value: 71, Token: token.Token{TokenType: token.NumberInt, Lexeme: "71", Literal: int64(71)}},
-		// 	Left: ast.TreeExpression{
-		// 		Operator: "*",
-		// 		Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
-		// 		Left:     ast.Inteager{Value: 51, Token: token.Token{TokenType: token.NumberInt, Lexeme: "51", Literal: int64(51)}},
-		// 		Right:    ast.Inteager{Value: 36, Token: token.Token{TokenType: token.NumberInt, Lexeme: "36", Literal: int64(36)}},
-		// 	},
-		// }},
-
-		{input: "(37 * -21 / (45 * 16))", expectedVal: ast.TreeExpression{
+		{input: "51*36/71", expectedVal: ast.InfixExpression{
 			Operator: "/",
 			Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
 			Right:    ast.Inteager{Value: 71, Token: token.Token{TokenType: token.NumberInt, Lexeme: "71", Literal: int64(71)}},
-			Left: ast.TreeExpression{
+			Left: ast.InfixExpression{
 				Operator: "*",
 				Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
 				Left:     ast.Inteager{Value: 51, Token: token.Token{TokenType: token.NumberInt, Lexeme: "51", Literal: int64(51)}},
 				Right:    ast.Inteager{Value: 36, Token: token.Token{TokenType: token.NumberInt, Lexeme: "36", Literal: int64(36)}},
 			},
 		}},
-
-		// 51 * 36 / 72
+		{input: "(37 * -21 / (45 * 16))", expectedVal: ast.GroupingExpression{
+			Exp: ast.InfixExpression{
+				Operator: "/",
+				Token:    token.Token{TokenType: token.Slash, Lexeme: "/"},
+				Right: ast.GroupingExpression{
+					Exp: ast.InfixExpression{
+						Operator: "*",
+						Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+						Left:     ast.Inteager{Value: 45, Token: token.Token{TokenType: token.NumberInt, Lexeme: "45", Literal: int64(45)}},
+						Right:    ast.Inteager{Value: 16, Token: token.Token{TokenType: token.NumberInt, Lexeme: "16", Literal: int64(16)}},
+					},
+				},
+				Left: ast.InfixExpression{
+					Operator: "*",
+					Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+					Left:     ast.Inteager{Value: 37, Token: token.Token{TokenType: token.NumberInt, Lexeme: "37", Literal: int64(37)}},
+					Right: ast.PrefixExpression{
+						Operator: "-",
+						Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+						Right:    ast.Inteager{Value: 21, Token: token.Token{TokenType: token.NumberInt, Lexeme: "21", Literal: int64(21)}},
+					},
+				},
+			},
+		}},
+		{input: "1+2*3+4", expectedVal: ast.InfixExpression{
+			Operator: "+",
+			Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+			Right:    ast.Inteager{Value: 4, Token: token.Token{TokenType: token.NumberInt, Lexeme: "4", Literal: int64(4)}},
+			Left: ast.InfixExpression{
+				Operator: "+",
+				Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+				Left:     ast.Inteager{Value: 1, Token: token.Token{TokenType: token.NumberInt, Lexeme: "1", Literal: int64(1)}},
+				Right: ast.InfixExpression{
+					Operator: "*",
+					Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+					Right:    ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+					Left:     ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+				},
+			},
+		},
+		},
+		{input: "52+80-94", expectedVal: ast.InfixExpression{
+			Operator: "-",
+			Token:    token.Token{TokenType: token.Minus, Lexeme: "-"},
+			Right:    ast.Inteager{Value: 94, Token: token.Token{TokenType: token.NumberInt, Lexeme: "94", Literal: int64(94)}},
+			Left: ast.InfixExpression{
+				Operator: "+",
+				Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+				Left:     ast.Inteager{Value: 52, Token: token.Token{TokenType: token.NumberInt, Lexeme: "52", Literal: int64(52)}},
+				Right:    ast.Inteager{Value: 80, Token: token.Token{TokenType: token.NumberInt, Lexeme: "80", Literal: int64(80)}},
+			},
+		}},
+		{input: "(1+2)*(3+4)", expectedVal: ast.InfixExpression{
+			Operator: "*",
+			Token:    token.Token{TokenType: token.Star, Lexeme: "*"},
+			Left: ast.GroupingExpression{
+				Exp: ast.InfixExpression{
+					Operator: "+",
+					Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+					Left:     ast.Inteager{Value: 1, Token: token.Token{TokenType: token.NumberInt, Lexeme: "1", Literal: int64(1)}},
+					Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+				},
+			},
+			Right: ast.GroupingExpression{
+				Exp: ast.InfixExpression{
+					Operator: "+",
+					Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+					Left:     ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+					Right:    ast.Inteager{Value: 4, Token: token.Token{TokenType: token.NumberInt, Lexeme: "4", Literal: int64(4)}},
+				},
+			},
+		}},
+		{input: "(1+2)>(3+4)", expectedVal: ast.InfixExpression{
+			Operator: ">",
+			Token:    token.Token{TokenType: token.Greater, Lexeme: ">"},
+			Left: ast.GroupingExpression{
+				Exp: ast.InfixExpression{
+					Operator: "+",
+					Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+					Left:     ast.Inteager{Value: 1, Token: token.Token{TokenType: token.NumberInt, Lexeme: "1", Literal: int64(1)}},
+					Right:    ast.Inteager{Value: 2, Token: token.Token{TokenType: token.NumberInt, Lexeme: "2", Literal: int64(2)}},
+				},
+			},
+			Right: ast.GroupingExpression{
+				Exp: ast.InfixExpression{
+					Operator: "+",
+					Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+					Left:     ast.Inteager{Value: 3, Token: token.Token{TokenType: token.NumberInt, Lexeme: "3", Literal: int64(3)}},
+					Right:    ast.Inteager{Value: 4, Token: token.Token{TokenType: token.NumberInt, Lexeme: "4", Literal: int64(4)}},
+				},
+			},
+		}},
+		{input: "22 == 20", expectedVal: ast.InfixExpression{
+			Operator: "==",
+			Token:    token.Token{TokenType: token.EqualEqual, Lexeme: "=="},
+			Right:    ast.Inteager{Value: 20, Token: token.Token{TokenType: token.NumberInt, Lexeme: "20", Literal: int64(20)}},
+			Left:     ast.Inteager{Value: 22, Token: token.Token{TokenType: token.NumberInt, Lexeme: "22", Literal: int64(22)}},
+		}},
+		{input: "22 != 20", expectedVal: ast.InfixExpression{
+			Operator: "!=",
+			Token:    token.Token{TokenType: token.BangEqual, Lexeme: "!="},
+			Right:    ast.Inteager{Value: 20, Token: token.Token{TokenType: token.NumberInt, Lexeme: "20", Literal: int64(20)}},
+			Left:     ast.Inteager{Value: 22, Token: token.Token{TokenType: token.NumberInt, Lexeme: "22", Literal: int64(22)}},
+		}},
+		{input: "(72 +)", expectedVal: ast.InfixExpression{
+			Operator: "!=",
+			Token:    token.Token{TokenType: token.BangEqual, Lexeme: "!="},
+			Right:    ast.Inteager{Value: 20, Token: token.Token{TokenType: token.NumberInt, Lexeme: "20", Literal: int64(20)}},
+			Left:     ast.Inteager{Value: 22, Token: token.Token{TokenType: token.NumberInt, Lexeme: "22", Literal: int64(22)}},
+		}},
 	}
 
 	for _, testCase := range tests {
@@ -178,10 +274,33 @@ func TestParserExpression2(t *testing.T) {
 			lexar := lexar.NewLexar([]byte(testCase.input))
 			parser := NewParser(*lexar)
 
-			resp := parser.parseExpressionTwo(Lowest)
+			resp := parser.parseExpression(Lowest)
 
 			if !reflect.DeepEqual(resp, testCase.expectedVal) {
 				t.Errorf("Expected to \nget: %#v, \ngot: %#v", testCase.expectedVal, resp)
+			}
+		})
+	}
+}
+
+func TestExpressionErrors(t *testing.T) {
+
+	tests := []struct {
+		input  string
+		errors []string
+	}{
+		{input: "(72 +)", errors: []string{"[line 1] Error at ')': Expect expression."}},
+	}
+
+	for _, testCase := range tests {
+		t.Run(fmt.Sprintf("Running input: %v", testCase.input), func(t *testing.T) {
+			lexar := lexar.NewLexar([]byte(testCase.input))
+			parser := NewParser(*lexar)
+
+			parser.parseExpression(Lowest)
+
+			if !reflect.DeepEqual(parser.Errors(), testCase.errors) {
+				t.Errorf("Expected to \nget: %#v, \ngot: %#v", testCase.errors, parser.Errors())
 			}
 		})
 	}

@@ -12,7 +12,7 @@ type Lexar struct {
 	input []byte
 	index int
 	start int
-	line  int
+	Line  int
 }
 
 func (l *Lexar) eof() bool {
@@ -43,7 +43,7 @@ func NewLexar(input []byte) *Lexar {
 	return &Lexar{
 		input: input,
 		index: 0,
-		line:  1,
+		Line:  1,
 	}
 }
 
@@ -86,7 +86,7 @@ func (l *Lexar) NextToken() token.Token {
 	case ';':
 		currToken.TokenType = token.Semicolon
 	case '\n':
-		l.line++
+		l.Line++
 		return l.NextToken()
 	case '=':
 		currToken.TokenType = token.Equal
@@ -119,7 +119,7 @@ func (l *Lexar) NextToken() token.Token {
 
 		if l.peek() != '"' {
 			currToken.TokenType = token.ErrorToken
-			currToken.Literal = fmt.Errorf("[line %d] Error: Unterminated string.", l.line)
+			currToken.Literal = fmt.Errorf("[line %d] Error: Unterminated string.", l.Line)
 		}
 		l.next()
 
@@ -152,7 +152,7 @@ func (l *Lexar) NextToken() token.Token {
 			}
 		} else {
 			currToken.TokenType = token.ErrorToken
-			currToken.Literal = fmt.Errorf("[line %d] Error: Unexpected character: %v", l.line, string(inputChar))
+			currToken.Literal = fmt.Errorf("[line %d] Error: Unexpected character: %v", l.Line, string(inputChar))
 		}
 	}
 

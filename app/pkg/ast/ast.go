@@ -86,14 +86,14 @@ func (astPrefixExpression PrefixExpression) String() string {
 	return "(" + astPrefixExpression.Operator + " " + astPrefixExpression.Right.String() + ")"
 }
 
-type TreeExpression struct {
+type InfixExpression struct {
 	Operator string
 	Token    token.Token
 	Right    Expression
 	Left     Expression
 }
 
-func (astPrefixExpression TreeExpression) Expression() {}
-func (astTreeExpression TreeExpression) String() string {
-	return "(" + astTreeExpression.Operator + " " + astTreeExpression.Left.String() + " " + astTreeExpression.Right.String() + ")"
+func (astInfixExpression InfixExpression) Expression() {}
+func (astInfixExpression InfixExpression) String() string {
+	return "(" + astInfixExpression.Operator + " " + astInfixExpression.Left.String() + " " + astInfixExpression.Right.String() + ")"
 }
