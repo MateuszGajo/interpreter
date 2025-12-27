@@ -134,7 +134,7 @@ func (p *Parser) registerfunc() {
 func (p *Parser) parseInfix(left ast.Expression) ast.Expression {
 	ast := ast.InfixExpression{
 		Left:     left,
-		Operator: p.currToken.Lexeme,
+		Operator: p.currToken.TokenType,
 		Token:    p.currToken,
 	}
 
@@ -203,7 +203,7 @@ func (p *Parser) parseExpression(predecence int) ast.Expression {
 
 func (p *Parser) parsePrefix() ast.Expression {
 	ast := ast.PrefixExpression{
-		Operator: p.currToken.Lexeme,
+		Operator: p.currToken.TokenType,
 		Token:    p.currToken,
 	}
 	p.next()
@@ -236,7 +236,7 @@ func (p *Parser) parseStringLiteral() ast.Expression {
 }
 
 func (p *Parser) parseInt() ast.Expression {
-	return ast.Inteager{Value: p.currToken.Literal.(int64), Token: p.currToken}
+	return ast.Integer{Value: p.currToken.Literal.(int64), Token: p.currToken}
 }
 
 func (p *Parser) parseFloat() ast.Expression {

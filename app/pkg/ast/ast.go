@@ -4,9 +4,13 @@ import (
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
 
+type Node interface {
+	String() string
+}
+
 type Expression interface {
 	Expression()
-	String() string
+	Node
 }
 
 type Boolean struct {
@@ -26,13 +30,13 @@ func (astNil Nil) String() string {
 	return "nil"
 }
 
-type Inteager struct {
+type Integer struct {
 	Token token.Token
 	Value int64
 }
 
-func (astInteager Inteager) Expression() {}
-func (astInteager Inteager) String() string {
+func (astInteager Integer) Expression() {}
+func (astInteager Integer) String() string {
 	return astInteager.Token.ToString()
 }
 
@@ -76,18 +80,18 @@ func (astGrouping GroupingExpression) String() string {
 }
 
 type PrefixExpression struct {
-	Operator string
+	Operator token.TokenType
 	Token    token.Token
 	Right    Expression
 }
 
 func (astPrefixExpression PrefixExpression) Expression() {}
 func (astPrefixExpression PrefixExpression) String() string {
-	return "(" + astPrefixExpression.Operator + " " + astPrefixExpression.Right.String() + ")"
+	return "(" + token.TokenToSymbol(astPrefixExpression.Operator) + " " + astPrefixExpression.Right.String() + ")"
 }
 
 type InfixExpression struct {
-	Operator string
+	Operator token.TokenType
 	Token    token.Token
 	Right    Expression
 	Left     Expression
@@ -95,5 +99,5 @@ type InfixExpression struct {
 
 func (astInfixExpression InfixExpression) Expression() {}
 func (astInfixExpression InfixExpression) String() string {
-	return "(" + astInfixExpression.Operator + " " + astInfixExpression.Left.String() + " " + astInfixExpression.Right.String() + ")"
+	return "(" + token.TokenToSymbol(astInfixExpression.Operator) + " " + astInfixExpression.Left.String() + " " + astInfixExpression.Right.String() + ")"
 }

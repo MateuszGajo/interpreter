@@ -56,6 +56,43 @@ const (
 	ErrorToken TokenType = "ERROR"
 )
 
+func TokenToSymbol(token TokenType) string {
+	switch token {
+	case Star:
+		return "*"
+	case Slash:
+		return "/"
+	case Dot:
+		return "."
+	case Comma:
+		return ","
+	case Plus:
+		return "+"
+	case Minus:
+		return "-"
+	case Semicolon:
+		return ";"
+	case Bang:
+		return "!"
+	case BangEqual:
+		return "!="
+	case Equal:
+		return "="
+	case EqualEqual:
+		return "=="
+	case Greater:
+		return ">"
+	case GreaterEqual:
+		return ">="
+	case Less:
+		return "<"
+	case LessEqual:
+		return "<="
+	default:
+		panic(fmt.Sprintf("tokenToSymbol, not supported token: %+v", token))
+	}
+}
+
 var ReservedKeywords = map[string]TokenType{
 	"and":    AndToken,
 	"class":  ClassToken,

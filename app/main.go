@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/evaluator"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/parser"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
@@ -31,13 +33,20 @@ func main() {
 		tokenizer(fileContents)
 	case "parse":
 		parse(fileContents)
+	case "evaluate":
+		data := parse(fileContents)
+		evaluate(data)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
 	}
 }
 
-func parse(fileContents []byte) {
+func evaluate(data ast.Expression) {
+	evaluator.Eval(data)
+}
+
+func parse(fileContents []byte) ast.Expression {
 	lexarInstance := lexar.NewLexar(fileContents)
 	parserInstance := parser.NewParser(*lexarInstance)
 
@@ -56,6 +65,8 @@ func parse(fileContents []byte) {
 	if len(parserInstance.Errors()) != 0 {
 		os.Exit(65)
 	}
+
+	return data
 
 }
 
