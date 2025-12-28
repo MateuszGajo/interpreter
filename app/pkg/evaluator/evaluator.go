@@ -15,6 +15,16 @@ func Eval(node ast.Node) object.Object {
 		left := Eval(v.Left)
 		right := Eval(v.Right)
 		return evalInfixExpression(v.Operator, left, right)
+	case ast.Boolean:
+		return object.Boolean{Value: v.Value}
+	case ast.Nil:
+		return object.Nill{}
+	case ast.Integer:
+		return object.Integer{Value: v.Value}
+	case ast.Float:
+		return object.Float{Value: v.Value}
+	case ast.StringLiteral:
+		return object.String{Value: v.Value}
 	default:
 		panic(fmt.Sprintf("unsported node type: %v", reflect.TypeOf(node)))
 	}

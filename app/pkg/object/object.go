@@ -6,6 +6,8 @@ type ObjectType string
 
 const (
 	IntegerType ObjectType = "INTEGER"
+	FloatType   ObjectType = "FLOAT"
+	StringType  ObjectType = "STRING"
 	BooleanType ObjectType = "BOOLEAN"
 	NillType    ObjectType = "NILL"
 )
@@ -26,6 +28,32 @@ func (integer Integer) Inspect() string {
 	return fmt.Sprintf("%d", integer.Value)
 }
 
+type Float struct {
+	Value float64
+}
+
+func (float Float) Type() ObjectType {
+	return FloatType
+}
+func (float Float) Inspect() string {
+	if float.Value == float64(int64(float.Value)) {
+		return fmt.Sprintf("%.1f", float.Value)
+	} else {
+		return fmt.Sprintf("%g", float.Value)
+	}
+}
+
+type String struct {
+	Value string
+}
+
+func (stringObj String) Type() ObjectType {
+	return StringType
+}
+func (stringObj String) Inspect() string {
+	return fmt.Sprintf("%v", stringObj.Value)
+}
+
 type Boolean struct {
 	Value bool
 }
@@ -44,5 +72,5 @@ func (nill Nill) Type() ObjectType {
 	return NillType
 }
 func (nill Nill) Inspect() string {
-	return "null"
+	return "nil"
 }

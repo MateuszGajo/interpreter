@@ -34,16 +34,20 @@ func main() {
 	case "parse":
 		parse(fileContents)
 	case "evaluate":
-		data := parse(fileContents)
-		evaluate(data)
+		evaluate(fileContents)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
 	}
 }
 
-func evaluate(data ast.Expression) {
-	evaluator.Eval(data)
+func evaluate(fileContents []byte) {
+	lexarInstance := lexar.NewLexar(fileContents)
+	parserInstance := parser.NewParser(*lexarInstance)
+	data := parserInstance.Parse()
+	objData := evaluator.Eval(data)
+
+	fmt.Println(objData.Inspect())
 }
 
 func parse(fileContents []byte) ast.Expression {
