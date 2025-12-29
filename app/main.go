@@ -7,6 +7,7 @@ import (
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/evaluator"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/object"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/parser"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
@@ -47,7 +48,14 @@ func evaluate(fileContents []byte) {
 	data := parserInstance.Parse()
 	objData := evaluator.Eval(data)
 
-	fmt.Println(objData.Inspect())
+	if objData.Type() == object.ErrorType {
+		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.Error).Message)
+		os.Stderr.Sync()
+		os.Exit(70)
+	} else {
+		fmt.Println(objData.Inspect())
+	}
+
 }
 
 func parse(fileContents []byte) ast.Expression {

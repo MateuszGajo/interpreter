@@ -10,6 +10,7 @@ const (
 	StringType  ObjectType = "STRING"
 	BooleanType ObjectType = "BOOLEAN"
 	NillType    ObjectType = "NILL"
+	ErrorType   ObjectType = "ERROR"
 )
 
 type Object interface {
@@ -73,4 +74,15 @@ func (nill Nill) Type() ObjectType {
 }
 func (nill Nill) Inspect() string {
 	return "nil"
+}
+
+type Error struct {
+	Message string
+}
+
+func (errObj Error) Type() ObjectType {
+	return ErrorType
+}
+func (errObj Error) Inspect() string {
+	return errObj.Message
 }
