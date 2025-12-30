@@ -44,13 +44,14 @@ const (
 	IfToken     TokenType = "IF"
 	NilToken    TokenType = "NIL"
 	OrToken     TokenType = "OR"
-	PrintToken  TokenType = "PRINT"
 	ReturnToken TokenType = "RETURN"
 	SuperToken  TokenType = "SUPER"
 	ThisToken   TokenType = "THIS"
 	TrueToken   TokenType = "TRUE"
 	VarToken    TokenType = "VAR"
 	WhileToken  TokenType = "WHILE"
+	//TODO: no really a keyword but let keep it to pass stages
+	PrintToken TokenType = "PRINT"
 
 	Eof        TokenType = "EOF"
 	ErrorToken TokenType = "ERROR"

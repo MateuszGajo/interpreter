@@ -36,6 +36,8 @@ func main() {
 		parse(fileContents)
 	case "evaluate":
 		evaluate(fileContents)
+	case "run":
+		run(fileContents)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
@@ -46,7 +48,7 @@ func evaluate(fileContents []byte) {
 	lexarInstance := lexar.NewLexar(fileContents)
 	parserInstance := parser.NewParser(*lexarInstance)
 	data := parserInstance.Parse()
-	objData := evaluator.Eval(data)
+	objData := evaluator.Eval(data.Statements[0].(ast.ExpressionStatement).Expression)
 
 	if objData.Type() == object.ErrorType {
 		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.Error).Message)
@@ -58,11 +60,25 @@ func evaluate(fileContents []byte) {
 
 }
 
+func run(fileContents []byte) {
+	lexarInstance := lexar.NewLexar(fileContents)
+	parserInstance := parser.NewParser(*lexarInstance)
+	data := parserInstance.Parse()
+	objData := evaluator.Eval(data)
+
+	if objData.Type() == object.ErrorType {
+		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.Error).Message)
+		os.Stderr.Sync()
+		os.Exit(65)
+	}
+
+}
+
 func parse(fileContents []byte) ast.Expression {
 	lexarInstance := lexar.NewLexar(fileContents)
 	parserInstance := parser.NewParser(*lexarInstance)
 
-	data := parserInstance.Parse()
+	data := parserInstance.Parse().Statements[0].(ast.ExpressionStatement).Expression
 	for _, err := range parserInstance.Errors() {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 

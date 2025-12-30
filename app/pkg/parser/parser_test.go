@@ -70,7 +70,9 @@ func TestParserExpression(t *testing.T) {
 
 			resp := parser.Parse()
 
-			if !reflect.DeepEqual(resp, testCase.expectedVal) {
+			respExpression := resp.Statements[0].(ast.ExpressionStatement).Expression
+
+			if !reflect.DeepEqual(respExpression, testCase.expectedVal) {
 				t.Errorf("Expected to get:\n %#v, got: \n%#v", testCase.expectedVal, resp)
 			}
 		})
@@ -260,6 +262,36 @@ func TestParserExpressionArithmetic(t *testing.T) {
 			Token:    token.Token{TokenType: token.BangEqual, Lexeme: "!="},
 			Right:    ast.Integer{Value: 20, Token: token.Token{TokenType: token.NumberInt, Lexeme: "20", Literal: int64(20)}},
 			Left:     ast.Integer{Value: 22, Token: token.Token{TokenType: token.NumberInt, Lexeme: "22", Literal: int64(22)}},
+		}},
+	}
+
+	for _, testCase := range tests {
+		t.Run(fmt.Sprintf("Running input: %v", testCase.input), func(t *testing.T) {
+			lexar := lexar.NewLexar([]byte(testCase.input))
+			parser := NewParser(*lexar)
+
+			resp := parser.parseExpression(Lowest)
+
+			if !reflect.DeepEqual(resp, testCase.expectedVal) {
+				t.Errorf("Expected to \nget: %#v, \ngot: %#v", testCase.expectedVal, resp)
+			}
+		})
+	}
+}
+
+func TestParserExpressionFunctions(t *testing.T) {
+
+	tests := []struct {
+		input       string
+		expectedVal ast.Expression
+	}{
+		{input: "print(\"aa\")", expectedVal: ast.CallExpression{
+			Function:  ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+			Arguments: []ast.Expression{ast.GroupingExpression{Exp: ast.StringLiteral{Value: "aa", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"aa\"", Literal: "aa"}}}},
+		}},
+		{input: "print \"aa\"", expectedVal: ast.CallExpression{
+			Function:  ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+			Arguments: []ast.Expression{ast.StringLiteral{Value: "aa", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"aa\"", Literal: "aa"}}},
 		}},
 	}
 

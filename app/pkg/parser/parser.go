@@ -61,11 +61,30 @@ func (p *Parser) expectPeek(tokenType token.TokenType) bool {
 	return false
 }
 
-func (p *Parser) Parse() ast.Expression {
+func (p *Parser) Parse() *ast.Program {
+	program := &ast.Program{}
+	program.Statements = []ast.Statement{}
 	for p.currToken.TokenType != token.Eof {
-		return p.parseExpression(Lowest)
+		stmt := p.parseStatement()
+		program.Statements = append(program.Statements, stmt)
+		p.next()
 	}
-	panic("")
+
+	return program
+}
+
+func (p *Parser) parseStatement() ast.Statement {
+	return p.parseExpressionStatement()
+}
+
+func (p *Parser) parseExpressionStatement() ast.ExpressionStatement {
+	exp := p.parseExpression(Lowest)
+
+	if p.peekToken.TokenType == token.Semicolon {
+		p.next()
+	}
+
+	return ast.ExpressionStatement{Expression: exp}
 }
 
 var precedence = map[token.TokenType]int{
@@ -80,6 +99,7 @@ var precedence = map[token.TokenType]int{
 	token.Minus:        Sum,
 	token.Slash:        Product,
 	token.Star:         Product,
+	token.LeftParen:    Call,
 }
 
 func getPrecedence(tokenType token.TokenType) int {
@@ -101,6 +121,7 @@ const (
 	Sum           // +, -
 	Product       // *, /
 	Prefix        // -X !X
+	Call          // myFunction(x)
 )
 
 var prefix = map[token.TokenType]prefixParseFn{}
@@ -117,6 +138,8 @@ func (p *Parser) registerfunc() {
 	prefix[token.Minus] = p.parsePrefix
 	prefix[token.Bang] = p.parsePrefix
 	prefix[token.LeftParen] = p.parseGrouping
+	prefix[token.Identifier] = p.parseIdentifier
+	prefix[token.PrintToken] = p.parsePrintExpression
 
 	infix[token.Plus] = p.parseInfix
 	infix[token.Slash] = p.parseInfix
@@ -129,6 +152,34 @@ func (p *Parser) registerfunc() {
 	infix[token.Equal] = p.parseInfix
 	infix[token.EqualEqual] = p.parseInfix
 	infix[token.BangEqual] = p.parseInfix
+	infix[token.LeftParen] = p.parseCallExpression
+}
+
+func (p *Parser) parsePrintExpression() ast.Expression {
+	p.next()
+	return ast.CallExpression{Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}}, Arguments: p.parseExpressionList()}
+}
+
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	return ast.CallExpression{Function: function, Arguments: p.parseExpressionList()}
+}
+
+func (p *Parser) parseExpressionList() []ast.Expression {
+	list := []ast.Expression{}
+
+	exp := p.parseExpression(Lowest)
+	if exp == nil {
+		return list
+	}
+	list = append(list, exp)
+	p.next()
+
+	for p.currToken.TokenType == token.Comma {
+		exp := p.parseExpression(Lowest)
+		list = append(list, exp)
+	}
+
+	return list
 }
 
 func (p *Parser) parseInfix(left ast.Expression) ast.Expression {

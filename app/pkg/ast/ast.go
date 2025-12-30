@@ -1,12 +1,44 @@
 package ast
 
 import (
+	"bytes"
+	"strings"
+
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
+
+type Program struct {
+	Statements []Statement
+}
+
+func (p *Program) String() string {
+	var out bytes.Buffer
+
+	for _, s := range p.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}
+
+type Statement interface {
+	Node
+	statementNode()
+}
 
 type Node interface {
 	String() string
 }
+
+type ExpressionStatement struct {
+	Expression Expression
+}
+
+func (expressionStatement ExpressionStatement) String() string {
+	return expressionStatement.Expression.String()
+}
+
+func (expressionStatement ExpressionStatement) statementNode() {}
 
 type Expression interface {
 	Expression()
@@ -77,6 +109,21 @@ type GroupingExpression struct {
 func (astGrouping GroupingExpression) Expression() {}
 func (astGrouping GroupingExpression) String() string {
 	return "(group " + astGrouping.Exp.String() + ")"
+}
+
+type CallExpression struct {
+	Arguments []Expression
+	Function  Expression
+}
+
+func (callExpression CallExpression) Expression() {}
+func (callExpression CallExpression) String() string {
+	var args []string
+	for _, a := range callExpression.Arguments {
+		args = append(args, a.String())
+	}
+
+	return callExpression.Function.String() + "(" + strings.Join(args, ", ") + ")"
 }
 
 type PrefixExpression struct {

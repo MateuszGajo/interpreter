@@ -5,12 +5,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/object"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/parser"
 )
 
-func TestEval(t *testing.T) {
+func TestEvalExprssion(t *testing.T) {
 
 	test := []struct {
 		input  string
@@ -140,6 +141,22 @@ func TestEval(t *testing.T) {
 			input:  "-\"hello\"",
 			output: &object.Error{Message: "Operand must be a number"},
 		},
+		{
+			input:  "\"foo\"*42",
+			output: &object.Error{Message: "Operands must be a number"},
+		},
+		{
+			input:  "true/2",
+			output: &object.Error{Message: "Operands must be a number"},
+		},
+		{
+			input:  "true/false",
+			output: &object.Error{Message: "Operands must be a number"},
+		},
+		{
+			input:  "\"true\"*\"false\"",
+			output: &object.Error{Message: "Operands must be a number"},
+		},
 	}
 
 	for _, testCase := range test {
@@ -152,12 +169,73 @@ func TestEval(t *testing.T) {
 				t.Errorf("Error while parsing: %v", parserInstance.Errors())
 			}
 
-			evalOutput := Eval(parsedData)
+			evalOutput := Eval(parsedData.Statements[0].(ast.ExpressionStatement).Expression)
 
 			if !reflect.DeepEqual(evalOutput, testCase.output) {
 				t.Errorf("Expected to get type: %v, got type: %v", reflect.TypeOf(testCase.output), reflect.TypeOf(evalOutput))
 				t.Errorf("Expected to get: %q, got: %q", testCase.output, evalOutput)
 			}
+		})
+	}
+}
+
+func TestPrintStatement(t *testing.T) {
+
+	test := []struct {
+		input  string
+		output object.Object
+	}{
+		{
+			input:  "print(\"Test output by printing \")",
+			output: &object.Nill{},
+		},
+	}
+
+	for _, testCase := range test {
+		t.Run(fmt.Sprintf("eval for input: %v", testCase.input), func(t *testing.T) {
+			lexarInstance := lexar.NewLexar([]byte(testCase.input))
+			parserInstance := parser.NewParser(*lexarInstance)
+			parsedData := parserInstance.Parse()
+
+			originalBuiltins := builtins
+			defer func() { builtins = originalBuiltins }()
+
+			called := false
+			var capturedArgs []object.Object
+
+			builtins = map[string]func([]object.Object) object.Object{
+				"print": func(args []object.Object) object.Object {
+					called = true
+					capturedArgs = args
+
+					return &object.Nill{}
+				},
+			}
+
+			evalOutput := Eval(parsedData.Statements[0].(ast.ExpressionStatement).Expression)
+
+			if !reflect.DeepEqual(evalOutput, testCase.output) {
+				t.Errorf("Expected to get type: %v, got type: %v", reflect.TypeOf(testCase.output), reflect.TypeOf(evalOutput))
+				t.Errorf("Expected to get: %q, got: %q", testCase.output, evalOutput)
+			}
+
+			if !called {
+				t.Error("Expected print to be called")
+			}
+
+			if len(capturedArgs) != 1 {
+				t.Errorf("Expected 1 argument, got %d", len(capturedArgs))
+			}
+
+			if capturedArgs[0].Inspect() != "Test output by printing " {
+				t.Errorf("Expected 'Test output by printing, got '%s'", capturedArgs[0].Inspect())
+			}
+
+			if len(parserInstance.Errors()) != 0 {
+				t.Errorf("Error while parsing: %v", parserInstance.Errors())
+			}
+
+			builtins = originalBuiltins
 		})
 	}
 }
