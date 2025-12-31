@@ -74,7 +74,28 @@ func (p *Parser) Parse() *ast.Program {
 }
 
 func (p *Parser) parseStatement() ast.Statement {
-	return p.parseExpressionStatement()
+
+	switch p.currToken.TokenType {
+	case token.VarToken:
+		return p.parseDeclarationStatement()
+	default:
+		return p.parseExpressionStatement()
+	}
+}
+
+func (p *Parser) parseDeclarationStatement() ast.DeclarationStatement {
+	p.expectPeek(token.Identifier)
+
+	name := p.currToken.Lexeme
+
+	p.expectPeek(token.Equal)
+
+	p.next()
+	exp := p.parseExpression(Lowest)
+	if p.peekToken.TokenType == token.Semicolon {
+		p.next()
+	}
+	return ast.DeclarationStatement{Expression: exp, Name: name}
 }
 
 func (p *Parser) parseExpressionStatement() ast.ExpressionStatement {

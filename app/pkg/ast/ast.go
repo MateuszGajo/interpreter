@@ -30,6 +30,16 @@ type Node interface {
 	String() string
 }
 
+type DeclarationStatement struct {
+	Name       string
+	Expression Expression
+}
+
+func (declarationStatement DeclarationStatement) String() string {
+	return declarationStatement.Expression.String()
+}
+func (declarationStatement DeclarationStatement) statementNode() {}
+
 type ExpressionStatement struct {
 	Expression Expression
 }

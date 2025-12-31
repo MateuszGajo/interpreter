@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
@@ -139,23 +140,23 @@ func TestEvalExprssion(t *testing.T) {
 		},
 		{
 			input:  "-\"hello\"",
-			output: &object.Error{Message: "Operand must be a number"},
+			output: &object.RuntimeError{Message: "Operand must be a number"},
 		},
 		{
 			input:  "\"foo\"*42",
-			output: &object.Error{Message: "Operands must be a number"},
+			output: &object.RuntimeError{Message: "Operands must be a number"},
 		},
 		{
 			input:  "true/2",
-			output: &object.Error{Message: "Operands must be a number"},
+			output: &object.RuntimeError{Message: "Operands must be a number"},
 		},
 		{
 			input:  "true/false",
-			output: &object.Error{Message: "Operands must be a number"},
+			output: &object.RuntimeError{Message: "Operands must be a number"},
 		},
 		{
 			input:  "\"true\"*\"false\"",
-			output: &object.Error{Message: "Operands must be a number"},
+			output: &object.RuntimeError{Message: "Operands must be a number"},
 		},
 	}
 
@@ -183,11 +184,31 @@ func TestPrintStatement(t *testing.T) {
 
 	test := []struct {
 		input  string
-		output object.Object
+		output string
 	}{
 		{
 			input:  "print(\"Test output by printing \")",
-			output: &object.Nill{},
+			output: "Test output by printing ",
+		},
+		{
+			input:  "print false",
+			output: "false",
+		},
+		{
+			input:  "print 42",
+			output: "42",
+		},
+		{
+			input:  "print 12+24",
+			output: "36",
+		},
+		{
+			input:  "var aa = 55;print aa;",
+			output: "55",
+		},
+		{
+			input:  "var baz=41;var foo=41;print baz+foo;",
+			output: "82",
 		},
 	}
 
@@ -197,45 +218,67 @@ func TestPrintStatement(t *testing.T) {
 			parserInstance := parser.NewParser(*lexarInstance)
 			parsedData := parserInstance.Parse()
 
-			originalBuiltins := builtins
-			defer func() { builtins = originalBuiltins }()
+			orgWriter := writer
 
-			called := false
-			var capturedArgs []object.Object
+			var buf bytes.Buffer
+			writer = &buf
 
-			builtins = map[string]func([]object.Object) object.Object{
-				"print": func(args []object.Object) object.Object {
-					called = true
-					capturedArgs = args
+			data := Eval(parsedData)
 
-					return &object.Nill{}
-				},
+			if isError(data) {
+				t.Error(data.Inspect())
 			}
 
-			evalOutput := Eval(parsedData.Statements[0].(ast.ExpressionStatement).Expression)
-
-			if !reflect.DeepEqual(evalOutput, testCase.output) {
-				t.Errorf("Expected to get type: %v, got type: %v", reflect.TypeOf(testCase.output), reflect.TypeOf(evalOutput))
-				t.Errorf("Expected to get: %q, got: %q", testCase.output, evalOutput)
-			}
-
-			if !called {
-				t.Error("Expected print to be called")
-			}
-
-			if len(capturedArgs) != 1 {
-				t.Errorf("Expected 1 argument, got %d", len(capturedArgs))
-			}
-
-			if capturedArgs[0].Inspect() != "Test output by printing " {
-				t.Errorf("Expected 'Test output by printing, got '%s'", capturedArgs[0].Inspect())
+			if buf.String() != testCase.output+"\n" {
+				t.Errorf("Expected '%v' to be printed, got '%s'", testCase.output+"\n", buf.String())
 			}
 
 			if len(parserInstance.Errors()) != 0 {
 				t.Errorf("Error while parsing: %v", parserInstance.Errors())
 			}
 
-			builtins = originalBuiltins
+			writer = orgWriter
+
+		})
+	}
+}
+
+func TestEvalStatement(t *testing.T) {
+
+	test := []struct {
+		input  string
+		output object.Object
+	}{
+		{
+			input:  "print \"hello world\";\n64+\"foo\";",
+			output: &object.RuntimeError{Message: "Operands must be a number"},
+		},
+		{
+			input:  "-\"bar\"",
+			output: &object.RuntimeError{Message: "Operand must be a number"},
+		},
+		{
+			input:  "print false * (16+83)",
+			output: &object.RuntimeError{Message: "Operands must be a number"},
+		},
+	}
+
+	for _, testCase := range test {
+		t.Run(fmt.Sprintf("eval for input: %v", testCase.input), func(t *testing.T) {
+			lexarInstance := lexar.NewLexar([]byte(testCase.input))
+			parserInstance := parser.NewParser(*lexarInstance)
+			parsedData := parserInstance.Parse()
+
+			if len(parserInstance.Errors()) != 0 {
+				t.Errorf("Error while parsing: %v", parserInstance.Errors())
+			}
+
+			evalOutput := Eval(parsedData)
+
+			if !reflect.DeepEqual(evalOutput, testCase.output) {
+				t.Errorf("Expected to get type: %v, got type: %v", reflect.TypeOf(testCase.output), reflect.TypeOf(evalOutput))
+				t.Errorf("Expected to get: %q, got: %q", testCase.output, evalOutput)
+			}
 		})
 	}
 }

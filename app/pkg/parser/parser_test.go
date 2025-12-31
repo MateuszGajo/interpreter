@@ -278,6 +278,31 @@ func TestParserExpressionArithmetic(t *testing.T) {
 		})
 	}
 }
+func TestParserDeclarationStatment(t *testing.T) {
+
+	tests := []struct {
+		input       string
+		expectedVal *ast.Program
+	}{
+		{input: "var aa = 53;", expectedVal: &ast.Program{Statements: []ast.Statement{ast.DeclarationStatement{Name: "aa", Expression: ast.Integer{
+			Value: 53,
+			Token: token.Token{TokenType: token.NumberInt, Lexeme: "53", Literal: int64(53)},
+		}}}}},
+	}
+
+	for _, testCase := range tests {
+		t.Run(fmt.Sprintf("Running input: %v", testCase.input), func(t *testing.T) {
+			lexar := lexar.NewLexar([]byte(testCase.input))
+			parser := NewParser(*lexar)
+
+			resp := parser.Parse()
+
+			if !reflect.DeepEqual(resp, testCase.expectedVal) {
+				t.Errorf("Expected to \nget: %#v, \ngot: %#v", testCase.expectedVal, resp)
+			}
+		})
+	}
+}
 
 func TestParserExpressionFunctions(t *testing.T) {
 

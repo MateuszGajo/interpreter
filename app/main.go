@@ -50,8 +50,8 @@ func evaluate(fileContents []byte) {
 	data := parserInstance.Parse()
 	objData := evaluator.Eval(data.Statements[0].(ast.ExpressionStatement).Expression)
 
-	if objData.Type() == object.ErrorType {
-		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.Error).Message)
+	if objData.Type() == object.RuntimeErrorType {
+		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.RuntimeError).Message)
 		os.Stderr.Sync()
 		os.Exit(70)
 	} else {
@@ -66,12 +66,15 @@ func run(fileContents []byte) {
 	data := parserInstance.Parse()
 	objData := evaluator.Eval(data)
 
-	if objData.Type() == object.ErrorType {
-		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.Error).Message)
+	if objData.Type() == object.CompileErrorType {
+		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.CompileError).Message)
 		os.Stderr.Sync()
 		os.Exit(65)
+	} else if objData.Type() == object.RuntimeErrorType {
+		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.RuntimeError).Message)
+		os.Stderr.Sync()
+		os.Exit(70)
 	}
-
 }
 
 func parse(fileContents []byte) ast.Expression {

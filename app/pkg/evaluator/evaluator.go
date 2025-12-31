@@ -2,6 +2,8 @@ package evaluator
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"reflect"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
@@ -9,15 +11,28 @@ import (
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
 
+var defaultWriter io.Writer = os.Stdout
+
+var writer = defaultWriter
+
 var builtins = map[string]func(param []object.Object) object.Object{
 	"print": func(args []object.Object) object.Object {
 		if len(args) != 1 {
-			return &object.Error{Message: "print should only have 1 arg"}
+			return &object.CompileError{Message: "print should only have 1 arg"}
 		}
-		fmt.Println(args[0].Inspect())
-		return &object.Nill{}
+		arg := args[0]
+
+		if arg.Type() == object.StringType || arg.Type() == object.BooleanType || arg.Type() == object.FloatType || arg.Type() == object.IntegerType {
+			fmt.Fprintln(writer, arg.Inspect())
+			return &object.Nill{}
+		}
+
+		return &object.CompileError{Message: fmt.Sprintf("Unsupported type in print: %v", arg.Type())}
+
 	},
 }
+
+var memory = map[string]object.Object{}
 
 // what can arguments be??
 // literal string, interger, function, so basicaly object.Object array of them
@@ -29,6 +44,11 @@ func Eval(node ast.Node) object.Object {
 		return evalProgram(v)
 	case ast.ExpressionStatement:
 		return Eval(v.Expression)
+	case ast.DeclarationStatement:
+		exp := Eval(v.Expression)
+		memory[v.Name] = exp
+
+		return &object.Nill{}
 	case ast.InfixExpression:
 		left := Eval(v.Left)
 		right := Eval(v.Right)
@@ -42,6 +62,9 @@ func Eval(node ast.Node) object.Object {
 
 		for _, item := range v.Arguments {
 			data := Eval(item)
+			if isError(data) {
+				return data
+			}
 			args = append(args, data)
 		}
 
@@ -54,6 +77,15 @@ func Eval(node ast.Node) object.Object {
 		return builtIn(args)
 	case ast.Boolean:
 		return &object.Boolean{Value: v.Value}
+	case ast.Identifier:
+		data, ok := memory[v.Value]
+
+		if !ok {
+			return &object.CompileError{Message: fmt.Sprintf("Variable %v doesnt exist", v.Value)}
+		}
+
+		return data
+		// return &object.Identifier{Value: v.Value}
 	case ast.Nil:
 		return &object.Nill{}
 	case ast.Integer:
@@ -74,10 +106,17 @@ func evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 	for _, item := range program.Statements {
 		result = Eval(item)
+		if isError(result) {
+			return result
+		}
 	}
 
 	return result
 
+}
+
+func isError(item object.Object) bool {
+	return item.Type() == object.CompileErrorType || item.Type() == object.RuntimeErrorType
 }
 
 func evalPrefixExpression(operator token.TokenType, right object.Object) object.Object {
@@ -85,7 +124,7 @@ func evalPrefixExpression(operator token.TokenType, right object.Object) object.
 	switch operator {
 	case token.Minus:
 		if right.Type() != object.IntegerType && right.Type() != object.FloatType {
-			return &object.Error{Message: "Operand must be a number"}
+			return &object.RuntimeError{Message: "Operand must be a number"}
 		}
 
 		return &object.Integer{Value: -right.(*object.Integer).Value}
@@ -145,11 +184,11 @@ func evalInfixExpression(operator token.TokenType, left, right object.Object) ob
 			return resp
 		}
 	} else if operator == token.EqualEqual {
-		return object.Boolean{Value: false}
+		return &object.Boolean{Value: false}
 	}
 
 	if _, ok := specialInfixOperatorErrors[operator]; ok {
-		return &object.Error{Message: specialInfixOperatorErrors[operator]}
+		return &object.RuntimeError{Message: specialInfixOperatorErrors[operator]}
 	}
 	panic(fmt.Sprintf("not supported infix, left type: %v, right type: %v, operator: %v", left.Type(), right.Type(), operator))
 }

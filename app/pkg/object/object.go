@@ -5,12 +5,14 @@ import "fmt"
 type ObjectType string
 
 const (
-	IntegerType ObjectType = "INTEGER"
-	FloatType   ObjectType = "FLOAT"
-	StringType  ObjectType = "STRING"
-	BooleanType ObjectType = "BOOLEAN"
-	NillType    ObjectType = "NILL"
-	ErrorType   ObjectType = "ERROR"
+	IntegerType      ObjectType = "INTEGER"
+	FloatType        ObjectType = "FLOAT"
+	StringType       ObjectType = "STRING"
+	BooleanType      ObjectType = "BOOLEAN"
+	NillType         ObjectType = "NILL"
+	IdentifierType   ObjectType = "IDENTIFIER"
+	CompileErrorType ObjectType = "COMPILE_ERROR"
+	RuntimeErrorType ObjectType = "RUNTIME_ERROR"
 )
 
 type Object interface {
@@ -76,13 +78,35 @@ func (nill Nill) Inspect() string {
 	return "nil"
 }
 
-type Error struct {
+type Identifier struct {
+	Value string
+}
+
+func (identifier Identifier) Type() ObjectType {
+	return IdentifierType
+}
+func (identifier Identifier) Inspect() string {
+	return identifier.Value
+}
+
+type CompileError struct {
 	Message string
 }
 
-func (errObj Error) Type() ObjectType {
-	return ErrorType
+func (errObj CompileError) Type() ObjectType {
+	return CompileErrorType
 }
-func (errObj Error) Inspect() string {
+func (errObj CompileError) Inspect() string {
+	return errObj.Message
+}
+
+type RuntimeError struct {
+	Message string
+}
+
+func (errObj RuntimeError) Type() ObjectType {
+	return RuntimeErrorType
+}
+func (errObj RuntimeError) Inspect() string {
 	return errObj.Message
 }
