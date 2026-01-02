@@ -284,10 +284,75 @@ func TestParserDeclarationStatment(t *testing.T) {
 		input       string
 		expectedVal *ast.Program
 	}{
-		{input: "var aa = 53;", expectedVal: &ast.Program{Statements: []ast.Statement{ast.DeclarationStatement{Name: "aa", Expression: ast.Integer{
-			Value: 53,
-			Token: token.Token{TokenType: token.NumberInt, Lexeme: "53", Literal: int64(53)},
-		}}}}},
+		{
+			input: "var aa = 53;",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.DeclarationStatement{
+						Names: []string{"aa"},
+						Expression: ast.Integer{
+							Value: 53,
+							Token: token.Token{TokenType: token.NumberInt, Lexeme: "53", Literal: int64(53)},
+						},
+					},
+				},
+			},
+		},
+		{
+			input: "var aa;",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.DeclarationStatement{
+						Names:      []string{"aa"},
+						Expression: ast.Nil{},
+					},
+				},
+			},
+		},
+		{
+			input: "var aa =bb =\"hello world\";",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.DeclarationStatement{
+						Names:      []string{"aa", "bb"},
+						Expression: ast.StringLiteral{Value: "hello world", Token: token.Token{Lexeme: "\"hello world\"", Literal: "hello world", TokenType: token.StringToken}},
+					},
+				},
+			},
+		},
+		{
+			input: "var bar =68;var world=bar;",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.DeclarationStatement{
+						Names:      []string{"bar"},
+						Expression: ast.Integer{Value: 68, Token: token.Token{Lexeme: "68", Literal: int64(68), TokenType: token.NumberInt}},
+					},
+					ast.DeclarationStatement{
+						Names:      []string{"world"},
+						Expression: ast.Identifier{Value: "bar", Token: token.Token{Lexeme: "bar", TokenType: token.Identifier}},
+					},
+				},
+			},
+		},
+		{
+			input: "var bar =68;var world=11;bar=world",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.DeclarationStatement{
+						Names:      []string{"bar"},
+						Expression: ast.Integer{Value: 68, Token: token.Token{Lexeme: "68", Literal: int64(68), TokenType: token.NumberInt}},
+					},
+					ast.DeclarationStatement{
+						Names:      []string{"world"},
+						Expression: ast.Integer{Value: 11, Token: token.Token{Lexeme: "11", Literal: int64(11), TokenType: token.NumberInt}},
+					},
+					ast.ExpressionStatement{
+						Expression: ast.AssignExpression{IdentifierName: "bar", Value: ast.Identifier{Value: "world", Token: token.Token{Lexeme: "world", TokenType: token.Identifier}}},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range tests {

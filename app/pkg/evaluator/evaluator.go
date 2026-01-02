@@ -22,7 +22,7 @@ var builtins = map[string]func(param []object.Object) object.Object{
 		}
 		arg := args[0]
 
-		if arg.Type() == object.StringType || arg.Type() == object.BooleanType || arg.Type() == object.FloatType || arg.Type() == object.IntegerType {
+		if arg.Type() == object.StringType || arg.Type() == object.BooleanType || arg.Type() == object.FloatType || arg.Type() == object.IntegerType || arg.Type() == object.NillType {
 			fmt.Fprintln(writer, arg.Inspect())
 			return &object.Nill{}
 		}
@@ -38,15 +38,34 @@ var memory = map[string]object.Object{}
 // literal string, interger, function, so basicaly object.Object array of them
 //
 
+func variableDoesntExistError(varName string) object.Object {
+	return &object.RuntimeError{Message: fmt.Sprintf("Variable %v doesnt exist", varName)}
+}
+
 func Eval(node ast.Node) object.Object {
 	switch v := node.(type) {
 	case *ast.Program:
 		return evalProgram(v)
 	case ast.ExpressionStatement:
 		return Eval(v.Expression)
+	case ast.AssignExpression:
+		val := Eval(v.Value)
+		memory[v.IdentifierName] = val
+
+		return val
 	case ast.DeclarationStatement:
 		exp := Eval(v.Expression)
-		memory[v.Name] = exp
+		if isError(exp) {
+			return exp
+		}
+		if exp.Type() == object.NillType || exp.Type() == object.FloatType || exp.Type() == object.IntegerType || exp.Type() == object.StringType || exp.Type() == object.BooleanType {
+			for _, name := range v.Names {
+				memory[name] = exp
+
+			}
+		} else {
+			return object.RuntimeError{Message: fmt.Sprintf("unsupported objec type: %v data: %v in assignment declaration", exp.Type(), exp.Inspect())}
+		}
 
 		return &object.Nill{}
 	case ast.InfixExpression:
@@ -81,11 +100,10 @@ func Eval(node ast.Node) object.Object {
 		data, ok := memory[v.Value]
 
 		if !ok {
-			return &object.CompileError{Message: fmt.Sprintf("Variable %v doesnt exist", v.Value)}
+			return variableDoesntExistError(v.Value)
 		}
 
 		return data
-		// return &object.Identifier{Value: v.Value}
 	case ast.Nil:
 		return &object.Nill{}
 	case ast.Integer:
@@ -98,7 +116,6 @@ func Eval(node ast.Node) object.Object {
 		return Eval(v.Exp)
 	default:
 		panic(fmt.Sprintf("unsported node type: %v", reflect.TypeOf(node)))
-		// return object.Error{Message: "fdsf"}
 	}
 }
 

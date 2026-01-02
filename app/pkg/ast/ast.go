@@ -31,7 +31,7 @@ type Node interface {
 }
 
 type DeclarationStatement struct {
-	Name       string
+	Names      []string
 	Expression Expression
 }
 
@@ -119,6 +119,16 @@ type GroupingExpression struct {
 func (astGrouping GroupingExpression) Expression() {}
 func (astGrouping GroupingExpression) String() string {
 	return "(group " + astGrouping.Exp.String() + ")"
+}
+
+type AssignExpression struct {
+	IdentifierName string
+	Value          Expression
+}
+
+func (assignExpression AssignExpression) Expression() {}
+func (assignExpression AssignExpression) String() string {
+	return "(" + assignExpression.IdentifierName + " = " + assignExpression.Value.String() + ")"
 }
 
 type CallExpression struct {

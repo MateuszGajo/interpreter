@@ -85,17 +85,32 @@ func (p *Parser) parseStatement() ast.Statement {
 
 func (p *Parser) parseDeclarationStatement() ast.DeclarationStatement {
 	p.expectPeek(token.Identifier)
+	names := []string{p.currToken.Lexeme}
 
-	name := p.currToken.Lexeme
+	if p.peekToken.TokenType == token.Semicolon {
+		p.next()
+		return ast.DeclarationStatement{Expression: ast.Nil{}, Names: names}
+	}
 
 	p.expectPeek(token.Equal)
-
+	// var aa = 65
+	// var aa = bb = cc = 65
+	// var bb = 77 + 100;
+	// var bb = aa + 10;
 	p.next()
+
+	for p.currToken.TokenType == token.Identifier && p.peekToken.TokenType == token.Equal {
+		name := p.currToken.Lexeme
+		names = append(names, name)
+		p.next()
+		p.next()
+	}
+
 	exp := p.parseExpression(Lowest)
 	if p.peekToken.TokenType == token.Semicolon {
 		p.next()
 	}
-	return ast.DeclarationStatement{Expression: exp, Name: name}
+	return ast.DeclarationStatement{Expression: exp, Names: names}
 }
 
 func (p *Parser) parseExpressionStatement() ast.ExpressionStatement {
@@ -113,7 +128,7 @@ var precedence = map[token.TokenType]int{
 	token.LessEqual:    LessOrGreater,
 	token.Greater:      LessOrGreater,
 	token.GreaterEqual: LessOrGreater,
-	token.Equal:        Equals,
+	token.Equal:        Assign,
 	token.EqualEqual:   Equals,
 	token.BangEqual:    Equals,
 	token.Plus:         Sum,
@@ -137,7 +152,8 @@ type infixParseFn func(left ast.Expression) ast.Expression
 const (
 	_ int = iota
 	Lowest
-	Equals        // =
+	Assign        // =
+	Equals        // ==
 	LessOrGreater // < >
 	Sum           // +, -
 	Product       // *, /
@@ -170,10 +186,24 @@ func (p *Parser) registerfunc() {
 	infix[token.GreaterEqual] = p.parseInfix
 	infix[token.LessEqual] = p.parseInfix
 	infix[token.Less] = p.parseInfix
-	infix[token.Equal] = p.parseInfix
+	infix[token.Equal] = p.parseAssign
 	infix[token.EqualEqual] = p.parseInfix
 	infix[token.BangEqual] = p.parseInfix
 	infix[token.LeftParen] = p.parseCallExpression
+}
+
+func (p *Parser) parseAssign(left ast.Expression) ast.Expression {
+	identifier := left.(ast.Identifier)
+
+	expr := ast.AssignExpression{
+		IdentifierName: identifier.Value,
+	}
+	p.next()
+
+	expr.Value = p.parseExpression(Assign - 1)
+
+	return expr
+
 }
 
 func (p *Parser) parsePrintExpression() ast.Expression {

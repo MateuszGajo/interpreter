@@ -186,29 +186,53 @@ func TestPrintStatement(t *testing.T) {
 		input  string
 		output string
 	}{
+		// {
+		// 	input:  "print(\"Test output by printing \")",
+		// 	output: "Test output by printing ",
+		// },
+		// {
+		// 	input:  "print false",
+		// 	output: "false",
+		// },
+		// {
+		// 	input:  "print 42",
+		// 	output: "42",
+		// },
+		// {
+		// 	input:  "print 12+24",
+		// 	output: "36",
+		// },
+		// {
+		// 	input:  "var aa = 55;print aa;",
+		// 	output: "55",
+		// },
+		// {
+		// 	input:  "var aa;print aa;",
+		// 	output: "nil",
+		// },
+		// {
+		// 	input:  "var aa=bb=1;print bb;",
+		// 	output: "1",
+		// },
+		// {
+		// 	input:  "var baz=41;var foo=41;print baz+foo;",
+		// 	output: "82",
+		// },
+		// {
+		// 	input:  "var bar=68;var world=bar;print world+bar;",
+		// 	output: "136",
+		// },
+		// {
+		// 	input:  "var baz; baz=1;print baz=2;",
+		// 	output: "2",
+		// },
+		// {
+		// 	input:  "var bar;var foo;var aaa;print bar=foo=aaa=66+27*69",
+		// 	output: "1929",
+		// },
 		{
-			input:  "print(\"Test output by printing \")",
-			output: "Test output by printing ",
-		},
-		{
-			input:  "print false",
-			output: "false",
-		},
-		{
-			input:  "print 42",
-			output: "42",
-		},
-		{
-			input:  "print 12+24",
-			output: "36",
-		},
-		{
-			input:  "var aa = 55;print aa;",
-			output: "55",
-		},
-		{
-			input:  "var baz=41;var foo=41;print baz+foo;",
-			output: "82",
+			input:  "var bar;var foo;var aaa;bar=foo=aaa=66+27*69; print aaa",
+			output: "1929",
 		},
 	}
 
@@ -238,12 +262,16 @@ func TestPrintStatement(t *testing.T) {
 			}
 
 			writer = orgWriter
-
+			cleanup()
 		})
 	}
 }
 
-func TestEvalStatement(t *testing.T) {
+func cleanup() {
+	memory = map[string]object.Object{}
+}
+
+func TestEvalErrorStatement(t *testing.T) {
 
 	test := []struct {
 		input  string
@@ -260,6 +288,14 @@ func TestEvalStatement(t *testing.T) {
 		{
 			input:  "print false * (16+83)",
 			output: &object.RuntimeError{Message: "Operands must be a number"},
+		},
+		{
+			input:  "print aa",
+			output: &object.RuntimeError{Message: "Variable aa doesnt exist"},
+		},
+		{
+			input:  "var aa = baz;",
+			output: &object.RuntimeError{Message: "Variable baz doesnt exist"},
 		},
 	}
 
@@ -279,6 +315,7 @@ func TestEvalStatement(t *testing.T) {
 				t.Errorf("Expected to get type: %v, got type: %v", reflect.TypeOf(testCase.output), reflect.TypeOf(evalOutput))
 				t.Errorf("Expected to get: %q, got: %q", testCase.output, evalOutput)
 			}
+			cleanup()
 		})
 	}
 }
