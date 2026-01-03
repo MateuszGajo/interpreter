@@ -29,10 +29,10 @@ func TestLexar(t *testing.T) {
 		{
 			input: "{{}}",
 			output: []token.Token{
-				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
-				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.LeftCurlyBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.LeftCurlyBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.RightCurlyBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.RightCurlyBrace, Lexeme: "}", Literal: nil},
 				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 		},
@@ -40,7 +40,7 @@ func TestLexar(t *testing.T) {
 			input: "({*.,+*-;})",
 			output: []token.Token{
 				{TokenType: token.LeftParen, Lexeme: "(", Literal: nil},
-				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.LeftCurlyBrace, Lexeme: "{", Literal: nil},
 				{TokenType: token.Star, Lexeme: "*", Literal: nil},
 				{TokenType: token.Dot, Lexeme: ".", Literal: nil},
 				{TokenType: token.Comma, Lexeme: ",", Literal: nil},
@@ -48,7 +48,7 @@ func TestLexar(t *testing.T) {
 				{TokenType: token.Star, Lexeme: "*", Literal: nil},
 				{TokenType: token.Minus, Lexeme: "-", Literal: nil},
 				{TokenType: token.Semicolon, Lexeme: ";", Literal: nil},
-				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.RightCurlyBrace, Lexeme: "}", Literal: nil},
 				{TokenType: token.RightParen, Lexeme: ")", Literal: nil},
 				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
@@ -56,10 +56,10 @@ func TestLexar(t *testing.T) {
 		{
 			input: "{{$}}#",
 			output: []token.Token{
-				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: token.LeftBrace, Lexeme: "{", Literal: nil},
-				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
-				{TokenType: token.RightBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.LeftCurlyBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.LeftCurlyBrace, Lexeme: "{", Literal: nil},
+				{TokenType: token.RightCurlyBrace, Lexeme: "}", Literal: nil},
+				{TokenType: token.RightCurlyBrace, Lexeme: "}", Literal: nil},
 				{TokenType: token.Eof, Lexeme: "", Literal: nil},
 			},
 			errors: []error{errors.New("[line 1] Error: Unexpected character: $"), errors.New("[line 1] Error: Unexpected character: #")},

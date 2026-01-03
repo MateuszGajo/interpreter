@@ -50,6 +50,21 @@ func (p *Parser) peekError(tokenType token.TokenType) {
 	p.addError(msg)
 }
 
+func (p *Parser) expectError(tokenType token.TokenType) {
+	msg := fmt.Sprintf("expected token to be %s, got %s instead", tokenType, p.peekToken.TokenType)
+	p.addError(msg)
+}
+
+func (p *Parser) expect(tokenType token.TokenType) bool {
+	if p.currToken.TokenType == tokenType {
+		return true
+	}
+
+	p.expectError(tokenType)
+
+	return false
+}
+
 func (p *Parser) expectPeek(tokenType token.TokenType) bool {
 	if p.peekToken.TokenType == tokenType {
 		p.next()
@@ -76,6 +91,8 @@ func (p *Parser) Parse() *ast.Program {
 func (p *Parser) parseStatement() ast.Statement {
 
 	switch p.currToken.TokenType {
+	case token.LeftCurlyBrace:
+		return p.parseBlockStatement()
 	case token.VarToken:
 		return p.parseDeclarationStatement()
 	default:
@@ -190,6 +207,22 @@ func (p *Parser) registerfunc() {
 	infix[token.EqualEqual] = p.parseInfix
 	infix[token.BangEqual] = p.parseInfix
 	infix[token.LeftParen] = p.parseCallExpression
+}
+
+// {
+// var hello = "baz";
+// print hello;
+//  }
+
+func (p *Parser) parseBlockStatement() ast.Statement {
+	statements := []ast.Statement{}
+	p.next()
+	for p.currToken.TokenType != token.RightCurlyBrace && p.currToken.TokenType != token.Eof {
+		statements = append(statements, p.parseStatement())
+		p.next()
+	}
+
+	return ast.BlockStatement{Statements: statements}
 }
 
 func (p *Parser) parseAssign(left ast.Expression) ast.Expression {

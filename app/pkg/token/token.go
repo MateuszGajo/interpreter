@@ -6,17 +6,17 @@ type TokenType string
 
 const (
 	// single character tokens
-	LeftParen  TokenType = "LEFT_PAREN"
-	RightParen TokenType = "RIGHT_PAREN"
-	LeftBrace  TokenType = "LEFT_BRACE"
-	RightBrace TokenType = "RIGHT_BRACE"
-	Star       TokenType = "STAR"
-	Dot        TokenType = "DOT"
-	Comma      TokenType = "COMMA"
-	Plus       TokenType = "PLUS"
-	Minus      TokenType = "MINUS"
-	Semicolon  TokenType = "SEMICOLON"
-	Slash      TokenType = "SLASH"
+	LeftParen       TokenType = "LEFT_PAREN"
+	RightParen      TokenType = "RIGHT_PAREN"
+	LeftCurlyBrace  TokenType = "LEFT_BRACE"
+	RightCurlyBrace TokenType = "RIGHT_BRACE"
+	Star            TokenType = "STAR"
+	Dot             TokenType = "DOT"
+	Comma           TokenType = "COMMA"
+	Plus            TokenType = "PLUS"
+	Minus           TokenType = "MINUS"
+	Semicolon       TokenType = "SEMICOLON"
+	Slash           TokenType = "SLASH"
 
 	// one or two character tokens
 	Bang         TokenType = "BANG"

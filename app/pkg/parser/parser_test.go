@@ -369,6 +369,100 @@ func TestParserDeclarationStatment(t *testing.T) {
 	}
 }
 
+func TestParserBlockStatements(t *testing.T) {
+
+	tests := []struct {
+		input       string
+		expectedVal *ast.Program
+	}{
+		// {
+		// 	input: "{var bar = 11}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.BlockStatement{
+		// 				Statements: []ast.Statement{
+		// 					ast.DeclarationStatement{
+		// 						Names:      []string{"bar"},
+		// 						Expression: ast.Integer{Value: 11, Token: token.Token{Lexeme: "11", Literal: int64(11), TokenType: token.NumberInt}},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		{
+			input: "{var bar = 11; var world = 12; print bar + world}",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.BlockStatement{
+						Statements: []ast.Statement{
+							ast.DeclarationStatement{
+								Names:      []string{"bar"},
+								Expression: ast.Integer{Value: 11, Token: token.Token{Lexeme: "11", Literal: int64(11), TokenType: token.NumberInt}},
+							},
+							ast.DeclarationStatement{
+								Names:      []string{"world"},
+								Expression: ast.Integer{Value: 12, Token: token.Token{Lexeme: "12", Literal: int64(12), TokenType: token.NumberInt}},
+							},
+							ast.ExpressionStatement{
+								Expression: ast.CallExpression{
+									Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+									Arguments: []ast.Expression{
+										ast.InfixExpression{
+											Left:     ast.Identifier{Value: "bar", Token: token.Token{TokenType: token.Identifier, Lexeme: "bar"}},
+											Right:    ast.Identifier{Value: "world", Token: token.Token{TokenType: token.Identifier, Lexeme: "world"}},
+											Operator: "+",
+											Token:    token.Token{TokenType: token.Plus, Lexeme: "+"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(fmt.Sprintf("Running input: %v", testCase.input), func(t *testing.T) {
+			lexar := lexar.NewLexar([]byte(testCase.input))
+			parser := NewParser(*lexar)
+
+			resp := parser.Parse()
+
+			for i, statement := range resp.Statements {
+				expectedStatement := testCase.expectedVal.Statements[i]
+				compareStatement(t, statement, expectedStatement)
+			}
+
+		})
+	}
+}
+
+// write more function to compare more low level stuff to logs be easily accessible
+
+func compareStatement(t *testing.T, outputStatement ast.Statement, expectingStatement ast.Statement) {
+	if reflect.TypeOf(outputStatement) != reflect.TypeOf(expectingStatement) {
+		t.Errorf("types are diffrent, expecting statement type: %v, output statement type: %v", reflect.TypeOf(expectingStatement), reflect.TypeOf(expectingStatement))
+	}
+	v, ok := outputStatement.(ast.BlockStatement)
+	if ok {
+		compareBlockStatement(t, v, expectingStatement.(ast.BlockStatement))
+		return
+	}
+
+	if !reflect.DeepEqual(expectingStatement, outputStatement) {
+		t.Errorf("expected statement\n: %#v, \n got: %#v", expectingStatement, outputStatement)
+	}
+}
+
+func compareBlockStatement(t *testing.T, outputStatement ast.BlockStatement, expectingStatement ast.BlockStatement) {
+	for i, statement := range outputStatement.Statements {
+		compareStatement(t, statement, expectingStatement.Statements[i])
+	}
+}
+
 func TestParserExpressionFunctions(t *testing.T) {
 
 	tests := []struct {

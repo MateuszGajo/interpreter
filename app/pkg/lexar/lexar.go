@@ -70,9 +70,9 @@ func (l *Lexar) NextToken() token.Token {
 	case ')':
 		currToken.TokenType = token.RightParen
 	case '{':
-		currToken.TokenType = token.LeftBrace
+		currToken.TokenType = token.LeftCurlyBrace
 	case '}':
-		currToken.TokenType = token.RightBrace
+		currToken.TokenType = token.RightCurlyBrace
 	case '*':
 		currToken.TokenType = token.Star
 	case '+':

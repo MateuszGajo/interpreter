@@ -131,6 +131,22 @@ func (assignExpression AssignExpression) String() string {
 	return "(" + assignExpression.IdentifierName + " = " + assignExpression.Value.String() + ")"
 }
 
+type BlockStatement struct {
+	Statements []Statement
+}
+
+func (blockStatement BlockStatement) Expression() {}
+func (blockStatement BlockStatement) String() string {
+	output := "{\n"
+	for _, statement := range blockStatement.Statements {
+		output += statement.String()
+	}
+	output += "\n}"
+
+	return output
+}
+func (blockStatement BlockStatement) statementNode() {}
+
 type CallExpression struct {
 	Arguments []Expression
 	Function  Expression
