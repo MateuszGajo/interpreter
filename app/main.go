@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
+	enviromenet "github.com/codecrafters-io/interpreter-starter-go/app/pkg/environment"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/evaluator"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/object"
@@ -48,7 +49,8 @@ func evaluate(fileContents []byte) {
 	lexarInstance := lexar.NewLexar(fileContents)
 	parserInstance := parser.NewParser(*lexarInstance)
 	data := parserInstance.Parse()
-	objData := evaluator.Eval(data.Statements[0].(ast.ExpressionStatement).Expression)
+	env := enviromenet.NewEnv()
+	objData := evaluator.Eval(data.Statements[0].(ast.ExpressionStatement).Expression, env)
 
 	if objData.Type() == object.RuntimeErrorType {
 		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.RuntimeError).Message)
@@ -64,7 +66,19 @@ func run(fileContents []byte) {
 	lexarInstance := lexar.NewLexar(fileContents)
 	parserInstance := parser.NewParser(*lexarInstance)
 	data := parserInstance.Parse()
-	objData := evaluator.Eval(data)
+
+	for _, err := range parserInstance.Errors() {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+
+	}
+	os.Stderr.Sync()
+
+	if len(parserInstance.Errors()) != 0 {
+		os.Exit(65)
+	}
+	env := enviromenet.NewEnv()
+
+	objData := evaluator.Eval(data, env)
 
 	if objData.Type() == object.CompileErrorType {
 		fmt.Fprintf(os.Stderr, "%s\n", objData.(*object.CompileError).Message)

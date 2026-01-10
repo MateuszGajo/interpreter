@@ -40,6 +40,17 @@ func (declarationStatement DeclarationStatement) String() string {
 }
 func (declarationStatement DeclarationStatement) statementNode() {}
 
+type IfStatement struct {
+	Condition Expression
+	Then      BlockStatement
+	Else      *BlockStatement
+}
+
+func (ifStatement IfStatement) String() string {
+	return ifStatement.Then.String()
+}
+func (ifStatement IfStatement) statementNode() {}
+
 type ExpressionStatement struct {
 	Expression Expression
 }

@@ -93,11 +93,40 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.TokenType {
 	case token.LeftCurlyBrace:
 		return p.parseBlockStatement()
+	case token.IfToken:
+		return p.parseIfStatement()
 	case token.VarToken:
 		return p.parseDeclarationStatement()
 	default:
 		return p.parseExpressionStatement()
 	}
+}
+
+func (p *Parser) parseIfStatement() ast.IfStatement {
+
+	ifStatement := ast.IfStatement{}
+
+	if !p.expectPeek(token.LeftParen) {
+		return ifStatement
+	}
+
+	ifStatement.Condition = p.parseExpression(Lowest)
+
+	if !p.expect(token.RightParen) {
+		return ifStatement
+	}
+
+	p.next()
+
+	ifStatement.Then = p.parseBranchBlock()
+	if p.peekToken.TokenType == token.ElseToken {
+		p.next()
+		p.next()
+		elseStmt := p.parseBranchBlock()
+		ifStatement.Else = &elseStmt
+	}
+
+	return ifStatement
 }
 
 func (p *Parser) parseDeclarationStatement() ast.DeclarationStatement {
@@ -222,7 +251,20 @@ func (p *Parser) parseBlockStatement() ast.Statement {
 		p.next()
 	}
 
+	if !p.expect(token.RightCurlyBrace) {
+		return nil
+	}
+
 	return ast.BlockStatement{Statements: statements}
+}
+
+func (p *Parser) parseBranchBlock() ast.BlockStatement {
+	statement := p.parseStatement()
+	if v, ok := statement.(ast.BlockStatement); ok {
+		return v
+	}
+	return ast.BlockStatement{Statements: []ast.Statement{statement}}
+
 }
 
 func (p *Parser) parseAssign(left ast.Expression) ast.Expression {

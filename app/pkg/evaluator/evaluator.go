@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
+	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/environment"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/object"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
 )
@@ -32,8 +33,6 @@ var builtins = map[string]func(param []object.Object) object.Object{
 	},
 }
 
-var memory = map[string]object.Object{}
-
 // what can arguments be??
 // literal string, interger, function, so basicaly object.Object array of them
 //
@@ -42,26 +41,45 @@ func variableDoesntExistError(varName string) object.Object {
 	return &object.RuntimeError{Message: fmt.Sprintf("Variable %v doesnt exist", varName)}
 }
 
-func Eval(node ast.Node) object.Object {
+func Eval(node ast.Node, env *environment.Environment) object.Object {
 	switch v := node.(type) {
 	case *ast.Program:
-		return evalProgram(v)
+		return evalProgram(v, env)
 	case ast.ExpressionStatement:
-		return Eval(v.Expression)
+		return Eval(v.Expression, env)
+	case ast.BlockStatement:
+		newEnv := environment.NewEnclosedEnv(env)
+		return evalStatements(v.Statements, newEnv)
+	case ast.IfStatement:
+		cond := Eval(v.Condition, env)
+		condBool, ok := cond.(*object.Boolean)
+		if !ok {
+			return object.RuntimeError{Message: fmt.Sprintf("Condition should be a boolean, got: %v", cond)}
+		}
+		if condBool.Value {
+			Eval(v.Then, env)
+		} else if v.Else != nil {
+			Eval(v.Else, env)
+		}
+		return cond
 	case ast.AssignExpression:
-		val := Eval(v.Value)
-		memory[v.IdentifierName] = val
+		val := Eval(v.Value, env)
+		resp := environment.Modify(env, v.IdentifierName, val)
+
+		if isError(resp) {
+			return resp
+		}
 
 		return val
 	case ast.DeclarationStatement:
-		exp := Eval(v.Expression)
+		exp := Eval(v.Expression, env)
 		if isError(exp) {
 			return exp
 		}
 		if exp.Type() == object.NillType || exp.Type() == object.FloatType || exp.Type() == object.IntegerType || exp.Type() == object.StringType || exp.Type() == object.BooleanType {
 			for _, name := range v.Names {
-				memory[name] = exp
 
+				environment.Set(env, name, exp)
 			}
 		} else {
 			return object.RuntimeError{Message: fmt.Sprintf("unsupported objec type: %v data: %v in assignment declaration", exp.Type(), exp.Inspect())}
@@ -69,18 +87,18 @@ func Eval(node ast.Node) object.Object {
 
 		return &object.Nill{}
 	case ast.InfixExpression:
-		left := Eval(v.Left)
-		right := Eval(v.Right)
+		left := Eval(v.Left, env)
+		right := Eval(v.Right, env)
 		return evalInfixExpression(v.Operator, left, right)
 	case ast.PrefixExpression:
-		right := Eval(v.Right)
+		right := Eval(v.Right, env)
 		return evalPrefixExpression(v.Operator, right)
 	case ast.CallExpression:
 		function := v.Function.(ast.Identifier).Value
 		args := []object.Object{}
 
 		for _, item := range v.Arguments {
-			data := Eval(item)
+			data := Eval(item, env)
 			if isError(data) {
 				return data
 			}
@@ -97,7 +115,7 @@ func Eval(node ast.Node) object.Object {
 	case ast.Boolean:
 		return &object.Boolean{Value: v.Value}
 	case ast.Identifier:
-		data, ok := memory[v.Value]
+		data, ok := environment.Get(env, v.Value)
 
 		if !ok {
 			return variableDoesntExistError(v.Value)
@@ -113,23 +131,27 @@ func Eval(node ast.Node) object.Object {
 	case ast.StringLiteral:
 		return &object.String{Value: v.Value}
 	case ast.GroupingExpression:
-		return Eval(v.Exp)
+		return Eval(v.Exp, env)
 	default:
 		panic(fmt.Sprintf("unsported node type: %v", reflect.TypeOf(node)))
 	}
 }
 
-func evalProgram(program *ast.Program) object.Object {
+func evalProgram(program *ast.Program, env *environment.Environment) object.Object {
+	return evalStatements(program.Statements, env)
+
+}
+
+func evalStatements(statements []ast.Statement, env *environment.Environment) object.Object {
 	var result object.Object
-	for _, item := range program.Statements {
-		result = Eval(item)
+	for _, item := range statements {
+		result = Eval(item, env)
 		if isError(result) {
 			return result
 		}
 	}
 
 	return result
-
 }
 
 func isError(item object.Object) bool {

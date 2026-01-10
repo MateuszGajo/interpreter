@@ -12,7 +12,7 @@ import (
 
 func compareStatement(outputStatement ast.Statement, expectedStatement ast.Statement) error {
 	if reflect.TypeOf(outputStatement) != reflect.TypeOf(expectedStatement) {
-		return fmt.Errorf("types are diffrent, expecting statement type: %v, output statement type: %v", reflect.TypeOf(expectedStatement), reflect.TypeOf(expectedStatement))
+		return fmt.Errorf("types are diffrent, expecting statement type: %v, output statement type: %v", reflect.TypeOf(expectedStatement), reflect.TypeOf(outputStatement))
 	}
 
 	switch v := outputStatement.(type) {
@@ -22,8 +22,28 @@ func compareStatement(outputStatement ast.Statement, expectedStatement ast.State
 		return compareExpression(v.Expression, expectedStatement.(ast.ExpressionStatement).Expression)
 	case ast.DeclarationStatement:
 		return compareDeclarationStatement(v, expectedStatement.(ast.DeclarationStatement))
+	case ast.IfStatement:
+		return compareIfStatement(v, expectedStatement.(ast.IfStatement))
 	default:
 		panic(fmt.Sprintf("unknown statement type: %v", reflect.TypeOf(outputStatement)))
+	}
+
+}
+
+func compareIfStatement(outputStatement ast.IfStatement, expectedStatement ast.IfStatement) error {
+	err := compareExpression(outputStatement.Condition, expectedStatement.Condition)
+	if err != nil {
+		return fmt.Errorf("If statement condition err \n%v", err)
+	}
+	err = compareBlockStatement(outputStatement.Then, expectedStatement.Then)
+	if err != nil {
+		return fmt.Errorf("If statement then err \n%v", err)
+	}
+	if outputStatement.Else != nil {
+		err = compareBlockStatement(*outputStatement.Else, *expectedStatement.Else)
+		if err != nil {
+			return fmt.Errorf("If statement else err \n%v", err)
+		}
 	}
 
 	return nil
@@ -562,6 +582,177 @@ func TestParserDeclarationStatment(t *testing.T) {
 	}
 }
 
+// if(aa) print aa;
+// if(aa) {print "fdsf"}
+// if(aa) {print "fdsf"} else if bb {}
+// if statement
+// array of condition -> code
+// rest (alternative else conditon) -> code
+
+func TestParserIfStatment(t *testing.T) {
+
+	tests := []struct {
+		input       string
+		expectedVal *ast.Program
+	}{
+
+		{
+			input: "if(48){print foo;}",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.IfStatement{
+						Condition: ast.GroupingExpression{
+							Exp: ast.Integer{
+								Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
+								Value: 48,
+							},
+						},
+						Then: ast.BlockStatement{
+							Statements: []ast.Statement{
+								ast.ExpressionStatement{
+									Expression: ast.CallExpression{
+										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+										Arguments: []ast.Expression{
+											ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			input: "if(48>11){print \"aaa\";}",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.IfStatement{
+						Condition: ast.GroupingExpression{
+							Exp: ast.InfixExpression{
+								Operator: token.Greater,
+								Left: ast.Integer{
+									Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
+									Value: 48,
+								},
+								Right: ast.Integer{
+									Token: token.Token{TokenType: token.NumberInt, Lexeme: "11", Literal: int64(11)},
+									Value: 11,
+								},
+								Token: token.Token{TokenType: token.Greater, Lexeme: ">"},
+							},
+						},
+						Then: ast.BlockStatement{
+							Statements: []ast.Statement{
+								ast.ExpressionStatement{
+									Expression: ast.CallExpression{
+										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+										Arguments: []ast.Expression{
+											ast.StringLiteral{Value: "aaa", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"aaa\"", Literal: "aaa"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+
+		{
+			input: "if(48)print foo;",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.IfStatement{
+						Condition: ast.GroupingExpression{
+							Exp: ast.Integer{
+								Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
+								Value: 48,
+							},
+						},
+						Then: ast.BlockStatement{
+							Statements: []ast.Statement{
+								ast.ExpressionStatement{
+									Expression: ast.CallExpression{
+										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+										Arguments: []ast.Expression{
+											ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			input: "if(40){print foo;}else{print bar;}",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.IfStatement{
+						Condition: ast.GroupingExpression{
+							Exp: ast.Integer{
+								Token: token.Token{TokenType: token.NumberInt, Lexeme: "40", Literal: int64(40)},
+								Value: 40,
+							},
+						},
+						Then: ast.BlockStatement{
+							Statements: []ast.Statement{
+								ast.ExpressionStatement{
+									Expression: ast.CallExpression{
+										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+										Arguments: []ast.Expression{
+											ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
+										},
+									},
+								},
+							},
+						},
+						Else: &ast.BlockStatement{
+							Statements: []ast.Statement{
+								ast.ExpressionStatement{
+									Expression: ast.CallExpression{
+										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+										Arguments: []ast.Expression{
+											ast.Identifier{Value: "bar", Token: token.Token{TokenType: token.Identifier, Lexeme: "bar"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(fmt.Sprintf("Running input: %v", testCase.input), func(t *testing.T) {
+			lexar := lexar.NewLexar([]byte(testCase.input))
+			parser := NewParser(*lexar)
+
+			resp := parser.Parse()
+
+			if len(parser.Errors()) > 0 {
+				for _, err := range parser.Errors() {
+					t.Fatal(err)
+				}
+			}
+			if len(resp.Statements) != len(testCase.expectedVal.Statements) {
+				t.Fatalf("Expected number of statement to be: %v, got: %v", len(testCase.expectedVal.Statements), len(resp.Statements))
+			}
+			for i, statement := range resp.Statements {
+				expectedStatement := testCase.expectedVal.Statements[i]
+				err := compareStatement(statement, expectedStatement)
+
+				if err != nil {
+					t.Fatalf("\n Response statement index: %v failed \n %v", i, err)
+				}
+			}
+		})
+	}
+}
 func TestParserBlockStatements(t *testing.T) {
 
 	tests := []struct {
@@ -569,7 +760,7 @@ func TestParserBlockStatements(t *testing.T) {
 		expectedVal *ast.Program
 	}{
 		{
-			input: "{var bar = 11}",
+			input: "{var bar = 11;}",
 			expectedVal: &ast.Program{
 				Statements: []ast.Statement{
 					ast.BlockStatement{
@@ -584,7 +775,7 @@ func TestParserBlockStatements(t *testing.T) {
 			},
 		},
 		{
-			input: "{var bar = 11; var world = 12; print bar + world}",
+			input: "{var bar = 11; var world = 12; print bar + world;}",
 			expectedVal: &ast.Program{
 				Statements: []ast.Statement{
 					ast.BlockStatement{
@@ -676,6 +867,7 @@ func TestExpressionErrors(t *testing.T) {
 		errors []string
 	}{
 		{input: "(72 +)", errors: []string{"[line 1] Error at ')': Expect expression.", "[line 1] expected next token to be RIGHT_PAREN, got EOF instead"}},
+		{input: "{var baz=1;", errors: []string{"[line 1] expected token to be RIGHT_BRACE, got EOF instead"}},
 	}
 
 	for _, testCase := range tests {
@@ -683,7 +875,7 @@ func TestExpressionErrors(t *testing.T) {
 			lexar := lexar.NewLexar([]byte(testCase.input))
 			parser := NewParser(*lexar)
 
-			parser.parseExpression(Lowest)
+			parser.Parse()
 
 			if !reflect.DeepEqual(parser.Errors(), testCase.errors) {
 				t.Errorf("Expected to \nget: %#v, \ngot: %#v", testCase.errors, parser.Errors())
