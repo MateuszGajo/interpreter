@@ -81,25 +81,34 @@ func (p *Parser) Parse() *ast.Program {
 	program.Statements = []ast.Statement{}
 	for p.currToken.TokenType != token.Eof {
 		stmt := p.parseStatement()
+		if stmt == nil {
+			return program
+		}
 		program.Statements = append(program.Statements, stmt)
-		p.next()
 	}
 
 	return program
 }
 
 func (p *Parser) parseStatement() ast.Statement {
-
+	var stmt ast.Statement
 	switch p.currToken.TokenType {
 	case token.LeftCurlyBrace:
 		return p.parseBlockStatement()
 	case token.IfToken:
 		return p.parseIfStatement()
 	case token.VarToken:
-		return p.parseDeclarationStatement()
+		stmt = p.parseDeclarationStatement()
 	default:
-		return p.parseExpressionStatement()
+		stmt = p.parseExpressionStatement()
 	}
+
+	if !p.expect(token.Semicolon) {
+		return nil
+	}
+	p.next()
+
+	return stmt
 }
 
 func (p *Parser) parseIfStatement() ast.IfStatement {
@@ -119,8 +128,7 @@ func (p *Parser) parseIfStatement() ast.IfStatement {
 	p.next()
 
 	ifStatement.Then = p.parseBranchBlock()
-	if p.peekToken.TokenType == token.ElseToken {
-		p.next()
+	if p.currToken.TokenType == token.ElseToken {
 		p.next()
 		elseStmt := p.parseBranchBlock()
 		ifStatement.Else = &elseStmt
@@ -182,6 +190,8 @@ var precedence = map[token.TokenType]int{
 	token.Slash:        Product,
 	token.Star:         Product,
 	token.LeftParen:    Call,
+	token.OrToken:      Logicals,
+	token.AndToken:     Logicals,
 }
 
 func getPrecedence(tokenType token.TokenType) int {
@@ -199,6 +209,7 @@ const (
 	_ int = iota
 	Lowest
 	Assign        // =
+	Logicals      // and or
 	Equals        // ==
 	LessOrGreater // < >
 	Sum           // +, -
@@ -236,6 +247,7 @@ func (p *Parser) registerfunc() {
 	infix[token.EqualEqual] = p.parseInfix
 	infix[token.BangEqual] = p.parseInfix
 	infix[token.LeftParen] = p.parseCallExpression
+	infix[token.OrToken] = p.parseInfix
 }
 
 // {
@@ -247,13 +259,17 @@ func (p *Parser) parseBlockStatement() ast.Statement {
 	statements := []ast.Statement{}
 	p.next()
 	for p.currToken.TokenType != token.RightCurlyBrace && p.currToken.TokenType != token.Eof {
-		statements = append(statements, p.parseStatement())
-		p.next()
+		stmt := p.parseStatement()
+		if stmt == nil {
+			return nil
+		}
+		statements = append(statements, stmt)
 	}
 
 	if !p.expect(token.RightCurlyBrace) {
 		return nil
 	}
+	p.next()
 
 	return ast.BlockStatement{Statements: statements}
 }

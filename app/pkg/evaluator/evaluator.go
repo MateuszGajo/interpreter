@@ -50,17 +50,29 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 	case ast.BlockStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		return evalStatements(v.Statements, newEnv)
+	case *ast.BlockStatement:
+		return Eval(*v, env)
 	case ast.IfStatement:
 		cond := Eval(v.Condition, env)
-		condBool, ok := cond.(*object.Boolean)
-		if !ok {
-			return object.RuntimeError{Message: fmt.Sprintf("Condition should be a boolean, got: %v", cond)}
+		boolVal, ok := cond.(*object.Boolean)
+		// if !ok {
+		// 	return object.RuntimeError{Message: fmt.Sprintf("Condition should be a boolean, got: %v", cond)}
+		// }
+		if ok {
+			if boolVal.Value {
+				Eval(v.Then, env)
+			} else if v.Else != nil {
+				Eval(v.Else, env)
+			}
+		} else {
+			_, ok := cond.(*object.Nill)
+			if !ok {
+				Eval(v.Then, env)
+			} else if v.Else != nil {
+				Eval(v.Else, env)
+			}
 		}
-		if condBool.Value {
-			Eval(v.Then, env)
-		} else if v.Else != nil {
-			Eval(v.Else, env)
-		}
+
 		return cond
 	case ast.AssignExpression:
 		val := Eval(v.Value, env)
@@ -87,9 +99,8 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 
 		return &object.Nill{}
 	case ast.InfixExpression:
-		left := Eval(v.Left, env)
-		right := Eval(v.Right, env)
-		return evalInfixExpression(v.Operator, left, right)
+
+		return evalInfixExpression(v.Operator, v.Left, v.Right, env)
 	case ast.PrefixExpression:
 		right := Eval(v.Right, env)
 		return evalPrefixExpression(v.Operator, right)
@@ -133,7 +144,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 	case ast.GroupingExpression:
 		return Eval(v.Exp, env)
 	default:
-		panic(fmt.Sprintf("unsported node type: %v", reflect.TypeOf(node)))
+		panic(fmt.Sprintf("unsupported node type: %v", reflect.TypeOf(node)))
 	}
 }
 
@@ -181,7 +192,7 @@ func evalPrefixExpression(operator token.TokenType, right object.Object) object.
 		}
 		panic("operand must be a nil, boolean or int")
 	default:
-		panic(fmt.Sprintf("not supported infix, right type: %v, operator: %v", right.Type(), operator))
+		panic(fmt.Sprintf("not supported prefix, right type: %v, operator: %v", right.Type(), operator))
 
 	}
 }
@@ -197,7 +208,25 @@ var specialInfixOperatorErrors = map[token.TokenType]string{
 	token.LessEqual:    "Operands must be a number",
 }
 
-func evalInfixExpression(operator token.TokenType, left, right object.Object) object.Object {
+func evalInfixExpression(operator token.TokenType, leftast, rightast ast.Expression, env *environment.Environment) object.Object {
+
+	if operator == token.OrToken {
+		left := Eval(leftast, env)
+		leftBoolVal := coerceToBoolean(left)
+		if leftBoolVal {
+			return left
+		}
+		right := Eval(rightast, env)
+		rightBoolVal := coerceToBoolean(right)
+		if rightBoolVal {
+			return right
+		}
+		return &object.Boolean{Value: false}
+	}
+
+	left := Eval(leftast, env)
+	right := Eval(rightast, env)
+
 	if left.Type() == object.FloatType || right.Type() == object.FloatType {
 		leftFloat := left
 		if left.Type() == object.IntegerType {
@@ -230,6 +259,23 @@ func evalInfixExpression(operator token.TokenType, left, right object.Object) ob
 		return &object.RuntimeError{Message: specialInfixOperatorErrors[operator]}
 	}
 	panic(fmt.Sprintf("not supported infix, left type: %v, right type: %v, operator: %v", left.Type(), right.Type(), operator))
+}
+
+func coerceToBoolean(item object.Object) bool {
+	switch v := item.(type) {
+	case *object.Boolean:
+		return v.Value
+	case *object.Float:
+		return v.Value != 0
+	case *object.Nill:
+		return false
+	case *object.Integer:
+		return v.Value != 0
+	case *object.String:
+		return len(v.Value) > 0
+	default:
+		panic(fmt.Sprintf("Not supported object type %v, in function objectToBooleanVal", reflect.TypeOf(item)))
+	}
 }
 
 func evalBoolInfixExpression(operator token.TokenType, left, right object.Object) object.Object {

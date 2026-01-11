@@ -224,21 +224,21 @@ func TestParserExpression(t *testing.T) {
 		input       string
 		expectedVal ast.Expression
 	}{
-		{input: "true", expectedVal: ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}}},
-		{input: "false", expectedVal: ast.Boolean{Value: false, Token: token.Token{TokenType: token.FalseToken, Lexeme: "false", Literal: nil}}},
-		{input: "nil", expectedVal: ast.Nil{}},
-		{input: "123.0", expectedVal: ast.Float{Value: 123, Token: token.Token{TokenType: token.NumberFloat, Lexeme: "123.0", Literal: 123.0}}},
-		{input: "123.12", expectedVal: ast.Float{Value: 123.12, Token: token.Token{TokenType: token.NumberFloat, Lexeme: "123.12", Literal: 123.12}}},
-		{input: "123", expectedVal: ast.Integer{Value: 123, Token: token.Token{TokenType: token.NumberInt, Lexeme: "123", Literal: int64(123)}}},
-		{input: "\"123\"", expectedVal: ast.StringLiteral{Value: "123", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"123\"", Literal: "123"}}},
-		{input: "let", expectedVal: ast.Identifier{Value: "let", Token: token.Token{TokenType: token.Identifier, Lexeme: "let", Literal: nil}}},
-		{input: "(let)", expectedVal: ast.GroupingExpression{Exp: ast.Identifier{Value: "let", Token: token.Token{TokenType: token.Identifier, Lexeme: "let", Literal: nil}}}},
-		{input: "!true", expectedVal: ast.PrefixExpression{
+		{input: "true;", expectedVal: ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}}},
+		{input: "false;", expectedVal: ast.Boolean{Value: false, Token: token.Token{TokenType: token.FalseToken, Lexeme: "false", Literal: nil}}},
+		{input: "nil;", expectedVal: ast.Nil{}},
+		{input: "123.0;", expectedVal: ast.Float{Value: 123, Token: token.Token{TokenType: token.NumberFloat, Lexeme: "123.0", Literal: 123.0}}},
+		{input: "123.12;", expectedVal: ast.Float{Value: 123.12, Token: token.Token{TokenType: token.NumberFloat, Lexeme: "123.12", Literal: 123.12}}},
+		{input: "123;", expectedVal: ast.Integer{Value: 123, Token: token.Token{TokenType: token.NumberInt, Lexeme: "123", Literal: int64(123)}}},
+		{input: "\"123\";", expectedVal: ast.StringLiteral{Value: "123", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"123\"", Literal: "123"}}},
+		{input: "let;", expectedVal: ast.Identifier{Value: "let", Token: token.Token{TokenType: token.Identifier, Lexeme: "let", Literal: nil}}},
+		{input: "(let);", expectedVal: ast.GroupingExpression{Exp: ast.Identifier{Value: "let", Token: token.Token{TokenType: token.Identifier, Lexeme: "let", Literal: nil}}}},
+		{input: "!true;", expectedVal: ast.PrefixExpression{
 			Right:    ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
 			Operator: token.Bang,
 			Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
 		}},
-		{input: "!!true", expectedVal: ast.PrefixExpression{
+		{input: "!!true;", expectedVal: ast.PrefixExpression{
 			Right: ast.PrefixExpression{
 				Right:    ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
 				Operator: token.Bang,
@@ -247,7 +247,7 @@ func TestParserExpression(t *testing.T) {
 			Operator: token.Bang,
 			Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
 		}},
-		{input: "!!(true)", expectedVal: ast.PrefixExpression{
+		{input: "!!(true);", expectedVal: ast.PrefixExpression{
 			Right: ast.PrefixExpression{
 				Right: ast.GroupingExpression{
 					Exp: ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
@@ -258,7 +258,7 @@ func TestParserExpression(t *testing.T) {
 			Operator: token.Bang,
 			Token:    token.Token{TokenType: token.Bang, Lexeme: "!"},
 		}},
-		{input: "(!!true)", expectedVal: ast.GroupingExpression{
+		{input: "(!!true);", expectedVal: ast.GroupingExpression{
 			Exp: ast.PrefixExpression{
 				Right: ast.PrefixExpression{
 					Right:    ast.Boolean{Value: true, Token: token.Token{TokenType: token.TrueToken, Lexeme: "true", Literal: nil}},
@@ -277,6 +277,12 @@ func TestParserExpression(t *testing.T) {
 			parser := NewParser(*lexar)
 
 			resp := parser.Parse()
+
+			if len(parser.Errors()) > 0 {
+				for _, err := range parser.Errors() {
+					t.Fatal(err)
+				}
+			}
 
 			respExpression := resp.Statements[0].(ast.ExpressionStatement).Expression
 			err := compareExpression(respExpression, testCase.expectedVal)
@@ -596,78 +602,280 @@ func TestParserIfStatment(t *testing.T) {
 		expectedVal *ast.Program
 	}{
 
+		// {
+		// 	input: "if(48){print foo;}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.IfStatement{
+		// 				Condition: ast.GroupingExpression{
+		// 					Exp: ast.Integer{
+		// 						Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
+		// 						Value: 48,
+		// 					},
+		// 				},
+		// 				Then: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 								Arguments: []ast.Expression{
+		// 									ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "if(48>11){print \"aaa\";}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.IfStatement{
+		// 				Condition: ast.GroupingExpression{
+		// 					Exp: ast.InfixExpression{
+		// 						Operator: token.Greater,
+		// 						Left: ast.Integer{
+		// 							Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
+		// 							Value: 48,
+		// 						},
+		// 						Right: ast.Integer{
+		// 							Token: token.Token{TokenType: token.NumberInt, Lexeme: "11", Literal: int64(11)},
+		// 							Value: 11,
+		// 						},
+		// 						Token: token.Token{TokenType: token.Greater, Lexeme: ">"},
+		// 					},
+		// 				},
+		// 				Then: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 								Arguments: []ast.Expression{
+		// 									ast.StringLiteral{Value: "aaa", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"aaa\"", Literal: "aaa"}},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+
+		// {
+		// 	input: "if(48)print foo;",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.IfStatement{
+		// 				Condition: ast.GroupingExpression{
+		// 					Exp: ast.Integer{
+		// 						Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
+		// 						Value: 48,
+		// 					},
+		// 				},
+		// 				Then: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 								Arguments: []ast.Expression{
+		// 									ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "if(40){print foo;}else{print bar;}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.IfStatement{
+		// 				Condition: ast.GroupingExpression{
+		// 					Exp: ast.Integer{
+		// 						Token: token.Token{TokenType: token.NumberInt, Lexeme: "40", Literal: int64(40)},
+		// 						Value: 40,
+		// 					},
+		// 				},
+		// 				Then: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 								Arguments: []ast.Expression{
+		// 									ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 				Else: &ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 								Arguments: []ast.Expression{
+		// 									ast.Identifier{Value: "bar", Token: token.Token{TokenType: token.Identifier, Lexeme: "bar"}},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "if(40){print foo;}else if(30){print bar;}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.IfStatement{
+		// 				Condition: ast.GroupingExpression{
+		// 					Exp: ast.Integer{
+		// 						Token: token.Token{TokenType: token.NumberInt, Lexeme: "40", Literal: int64(40)},
+		// 						Value: 40,
+		// 					},
+		// 				},
+		// 				Then: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 								Arguments: []ast.Expression{
+		// 									ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 				Else: &ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.IfStatement{
+		// 							Condition: ast.GroupingExpression{
+		// 								Exp: ast.Integer{
+		// 									Token: token.Token{TokenType: token.NumberInt, Lexeme: "30", Literal: int64(30)},
+		// 									Value: 30,
+		// 								},
+		// 							},
+		// 							Then: ast.BlockStatement{
+		// 								Statements: []ast.Statement{
+		// 									ast.ExpressionStatement{
+		// 										Expression: ast.CallExpression{
+		// 											Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 											Arguments: []ast.Expression{
+		// 												ast.Identifier{Value: "bar", Token: token.Token{TokenType: token.Identifier, Lexeme: "bar"}},
+		// 											},
+		// 										},
+		// 									},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "if(40)if(30)print bar;",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.IfStatement{
+		// 				Condition: ast.GroupingExpression{
+		// 					Exp: ast.Integer{
+		// 						Token: token.Token{TokenType: token.NumberInt, Lexeme: "40", Literal: int64(40)},
+		// 						Value: 40,
+		// 					},
+		// 				},
+		// 				Then: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.IfStatement{
+		// 							Condition: ast.GroupingExpression{
+		// 								Exp: ast.Integer{
+		// 									Token: token.Token{TokenType: token.NumberInt, Lexeme: "30", Literal: int64(30)},
+		// 									Value: 30,
+		// 								},
+		// 							},
+		// 							Then: ast.BlockStatement{
+		// 								Statements: []ast.Statement{
+		// 									ast.ExpressionStatement{
+		// 										Expression: ast.CallExpression{
+		// 											Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 											Arguments: []ast.Expression{
+		// 												ast.Identifier{Value: "bar", Token: token.Token{TokenType: token.Identifier, Lexeme: "bar"}},
+		// 											},
+		// 										},
+		// 									},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// }, {
+		// 	input: "if(40)if(30)print bar;",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.IfStatement{
+		// 				Condition: ast.GroupingExpression{
+		// 					Exp: ast.Integer{
+		// 						Token: token.Token{TokenType: token.NumberInt, Lexeme: "40", Literal: int64(40)},
+		// 						Value: 40,
+		// 					},
+		// 				},
+		// 				Then: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.IfStatement{
+		// 							Condition: ast.GroupingExpression{
+		// 								Exp: ast.Integer{
+		// 									Token: token.Token{TokenType: token.NumberInt, Lexeme: "30", Literal: int64(30)},
+		// 									Value: 30,
+		// 								},
+		// 							},
+		// 							Then: ast.BlockStatement{
+		// 								Statements: []ast.Statement{
+		// 									ast.ExpressionStatement{
+		// 										Expression: ast.CallExpression{
+		// 											Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+		// 											Arguments: []ast.Expression{
+		// 												ast.Identifier{Value: "bar", Token: token.Token{TokenType: token.Identifier, Lexeme: "bar"}},
+		// 											},
+		// 										},
+		// 									},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
 		{
-			input: "if(48){print foo;}",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.IfStatement{
-						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
-								Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
-								Value: 48,
-							},
-						},
-						Then: ast.BlockStatement{
-							Statements: []ast.Statement{
-								ast.ExpressionStatement{
-									Expression: ast.CallExpression{
-										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
-										Arguments: []ast.Expression{
-											ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			input: "if(48>11){print \"aaa\";}",
+			input: "if (false or \"ok\") print foo;",
 			expectedVal: &ast.Program{
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
 							Exp: ast.InfixExpression{
-								Operator: token.Greater,
-								Left: ast.Integer{
-									Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
-									Value: 48,
+								Operator: token.OrToken,
+								Token:    token.Token{TokenType: token.OrToken, Lexeme: "or"},
+								Left: ast.Boolean{
+									Token: token.Token{TokenType: token.FalseToken, Lexeme: "false"},
+									Value: false,
 								},
-								Right: ast.Integer{
-									Token: token.Token{TokenType: token.NumberInt, Lexeme: "11", Literal: int64(11)},
-									Value: 11,
+								Right: ast.StringLiteral{
+									Token: token.Token{TokenType: token.StringToken, Lexeme: "\"ok\"", Literal: "ok"},
+									Value: "ok",
 								},
-								Token: token.Token{TokenType: token.Greater, Lexeme: ">"},
-							},
-						},
-						Then: ast.BlockStatement{
-							Statements: []ast.Statement{
-								ast.ExpressionStatement{
-									Expression: ast.CallExpression{
-										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
-										Arguments: []ast.Expression{
-											ast.StringLiteral{Value: "aaa", Token: token.Token{TokenType: token.StringToken, Lexeme: "\"aaa\"", Literal: "aaa"}},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-
-		{
-			input: "if(48)print foo;",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.IfStatement{
-						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
-								Token: token.Token{TokenType: token.NumberInt, Lexeme: "48", Literal: int64(48)},
-								Value: 48,
 							},
 						},
 						Then: ast.BlockStatement{
@@ -677,45 +885,6 @@ func TestParserIfStatment(t *testing.T) {
 										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
 										Arguments: []ast.Expression{
 											ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			input: "if(40){print foo;}else{print bar;}",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.IfStatement{
-						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
-								Token: token.Token{TokenType: token.NumberInt, Lexeme: "40", Literal: int64(40)},
-								Value: 40,
-							},
-						},
-						Then: ast.BlockStatement{
-							Statements: []ast.Statement{
-								ast.ExpressionStatement{
-									Expression: ast.CallExpression{
-										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
-										Arguments: []ast.Expression{
-											ast.Identifier{Value: "foo", Token: token.Token{TokenType: token.Identifier, Lexeme: "foo"}},
-										},
-									},
-								},
-							},
-						},
-						Else: &ast.BlockStatement{
-							Statements: []ast.Statement{
-								ast.ExpressionStatement{
-									Expression: ast.CallExpression{
-										Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
-										Arguments: []ast.Expression{
-											ast.Identifier{Value: "bar", Token: token.Token{TokenType: token.Identifier, Lexeme: "bar"}},
 										},
 									},
 								},
@@ -775,6 +944,29 @@ func TestParserBlockStatements(t *testing.T) {
 			},
 		},
 		{
+			input: "{var bar = 11; print baz;}",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.BlockStatement{
+						Statements: []ast.Statement{
+							ast.DeclarationStatement{
+								Names:      []string{"bar"},
+								Expression: ast.Integer{Value: 11, Token: token.Token{Lexeme: "11", Literal: int64(11), TokenType: token.NumberInt}},
+							},
+							ast.ExpressionStatement{
+								Expression: ast.CallExpression{
+									Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}},
+									Arguments: []ast.Expression{
+										ast.Identifier{Value: "baz", Token: token.Token{TokenType: token.Identifier, Lexeme: "baz"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			input: "{var bar = 11; var world = 12; print bar + world;}",
 			expectedVal: &ast.Program{
 				Statements: []ast.Statement{
@@ -815,6 +1007,11 @@ func TestParserBlockStatements(t *testing.T) {
 
 			resp := parser.Parse()
 
+			if len(parser.Errors()) > 0 {
+				for _, err := range parser.Errors() {
+					t.Fatal(err)
+				}
+			}
 			for i, statement := range resp.Statements {
 				expectedStatement := testCase.expectedVal.Statements[i]
 				err := compareStatement(statement, expectedStatement)
@@ -866,7 +1063,7 @@ func TestExpressionErrors(t *testing.T) {
 		input  string
 		errors []string
 	}{
-		{input: "(72 +)", errors: []string{"[line 1] Error at ')': Expect expression.", "[line 1] expected next token to be RIGHT_PAREN, got EOF instead"}},
+		{input: "(72 +)", errors: []string{"[line 1] Error at ')': Expect expression.", "[line 1] expected next token to be RIGHT_PAREN, got EOF instead", "[line 1] expected token to be SEMICOLON, got EOF instead"}},
 		{input: "{var baz=1;", errors: []string{"[line 1] expected token to be RIGHT_BRACE, got EOF instead"}},
 	}
 
