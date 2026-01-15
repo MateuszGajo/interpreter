@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/token"
@@ -47,9 +48,48 @@ type IfStatement struct {
 }
 
 func (ifStatement IfStatement) String() string {
-	return ifStatement.Then.String()
+	output := fmt.Sprintf("if(%v){%v}"+ifStatement.Condition.String(), ifStatement.Then.String())
+
+	if ifStatement.Else != nil {
+		output += fmt.Sprintf("else{%v}", ifStatement.Else.String())
+	}
+
+	return output
 }
 func (ifStatement IfStatement) statementNode() {}
+
+type WhileStatement struct {
+	Condition Expression
+	Block     BlockStatement
+}
+
+func (whileStatement WhileStatement) String() string {
+	return fmt.Sprintf("while(%v){%v}", whileStatement.Condition.String(), whileStatement.Block.String())
+}
+func (whileStatement WhileStatement) statementNode() {}
+
+type ForStatement struct {
+	Condition   Expression
+	Evaluator   *Expression
+	Declaration *Statement
+	Block       BlockStatement
+}
+
+func (forStatement ForStatement) String() string {
+	output := "for("
+	if forStatement.Declaration != nil {
+		output += (*forStatement.Declaration).String()
+	}
+
+	output += fmt.Sprintf(";%v;", forStatement.Condition.String())
+	if forStatement.Evaluator != nil {
+		output += (*forStatement.Evaluator).String()
+	}
+	output += fmt.Sprintf("){%v}", forStatement.Block.String())
+
+	return output
+}
+func (forStatement ForStatement) statementNode() {}
 
 type ExpressionStatement struct {
 	Expression Expression

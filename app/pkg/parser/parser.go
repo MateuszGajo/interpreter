@@ -51,7 +51,7 @@ func (p *Parser) peekError(tokenType token.TokenType) {
 }
 
 func (p *Parser) expectError(tokenType token.TokenType) {
-	msg := fmt.Sprintf("expected token to be %s, got %s instead", tokenType, p.peekToken.TokenType)
+	msg := fmt.Sprintf("expected token to be %s, got %s instead", tokenType, p.currToken.TokenType)
 	p.addError(msg)
 }
 
@@ -97,6 +97,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseBlockStatement()
 	case token.IfToken:
 		return p.parseIfStatement()
+	case token.WhileToken:
+		return p.parseWhileStatement()
+	case token.ForToken:
+		return p.parseForStatement()
 	case token.VarToken:
 		stmt = p.parseDeclarationStatement()
 	default:
@@ -109,6 +113,70 @@ func (p *Parser) parseStatement() ast.Statement {
 	p.next()
 
 	return stmt
+}
+
+func (p *Parser) parseForStatement() ast.ForStatement {
+	forStatement := ast.ForStatement{}
+
+	if !p.expectPeek(token.LeftParen) {
+		return forStatement
+	}
+
+	p.next()
+
+	if p.currToken.TokenType == token.Semicolon {
+		forStatement.Declaration = nil
+		if !p.expect(token.Semicolon) {
+			return forStatement
+		}
+		p.next()
+	} else {
+		declaration := p.parseStatement()
+		forStatement.Declaration = &declaration
+
+	}
+
+	forStatement.Condition = p.parseExpression(Lowest)
+
+	if !p.expectPeek(token.Semicolon) {
+		return forStatement
+	}
+
+	p.next()
+
+	if p.currToken.TokenType != token.RightParen {
+		exp := p.parseExpression(Lowest)
+		forStatement.Evaluator = &exp
+		p.next()
+	}
+
+	if !p.expect(token.RightParen) {
+		return forStatement
+	}
+
+	p.next()
+
+	forStatement.Block = p.parseBranchBlock()
+
+	return forStatement
+}
+
+func (p *Parser) parseWhileStatement() ast.WhileStatement {
+	while := ast.WhileStatement{}
+	if !p.expectPeek(token.LeftParen) {
+		return while
+	}
+
+	while.Condition = p.parseExpression(Lowest)
+
+	if !p.expect(token.RightParen) {
+		return while
+	}
+	p.next()
+
+	while.Block = p.parseBranchBlock()
+
+	return while
 }
 
 func (p *Parser) parseIfStatement() ast.IfStatement {
@@ -248,6 +316,7 @@ func (p *Parser) registerfunc() {
 	infix[token.BangEqual] = p.parseInfix
 	infix[token.LeftParen] = p.parseCallExpression
 	infix[token.OrToken] = p.parseInfix
+	infix[token.AndToken] = p.parseInfix
 }
 
 // {

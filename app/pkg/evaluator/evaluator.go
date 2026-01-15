@@ -41,39 +41,93 @@ func variableDoesntExistError(varName string) object.Object {
 	return &object.RuntimeError{Message: fmt.Sprintf("Variable %v doesnt exist", varName)}
 }
 
+func isConditionTrue(condition ast.Expression, env *environment.Environment) object.Object {
+	cond := Eval(condition, env)
+	if isError(cond) {
+		return cond
+	}
+	boolVal, ok := cond.(*object.Boolean)
+	if ok {
+		if boolVal.Value {
+			return object.Boolean{Value: true}
+		} else {
+			return object.Boolean{Value: false}
+
+		}
+	} else {
+		_, ok := cond.(*object.Nill)
+		if !ok {
+			return object.Boolean{Value: true}
+
+		} else {
+			return object.Boolean{Value: false}
+
+		}
+	}
+}
+
 func Eval(node ast.Node, env *environment.Environment) object.Object {
 	switch v := node.(type) {
 	case *ast.Program:
 		return evalProgram(v, env)
 	case ast.ExpressionStatement:
 		return Eval(v.Expression, env)
+	case ast.WhileStatement:
+		newEnv := environment.NewEnclosedEnv(env)
+		for {
+			obj := isConditionTrue(v.Condition, env)
+			if isError(obj) {
+				return obj
+			}
+			if obj.(object.Boolean).Value {
+				Eval(v.Block, newEnv)
+			} else {
+				break
+			}
+		}
+
+		return object.Nill{}
+	case ast.ForStatement:
+		newEnv := environment.NewEnclosedEnv(env)
+		if v.Declaration != nil {
+			Eval(*v.Declaration, env)
+
+		}
+		for {
+			obj := isConditionTrue(v.Condition, env)
+			if isError(obj) {
+				return obj
+			}
+			if obj.(object.Boolean).Value {
+				Eval(v.Block, newEnv)
+			} else {
+				break
+			}
+
+			if v.Evaluator != nil {
+				Eval(*v.Evaluator, env)
+			}
+		}
+
+		return object.Nill{}
 	case ast.BlockStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		return evalStatements(v.Statements, newEnv)
 	case *ast.BlockStatement:
 		return Eval(*v, env)
 	case ast.IfStatement:
-		cond := Eval(v.Condition, env)
-		boolVal, ok := cond.(*object.Boolean)
-		// if !ok {
-		// 	return object.RuntimeError{Message: fmt.Sprintf("Condition should be a boolean, got: %v", cond)}
-		// }
-		if ok {
-			if boolVal.Value {
-				Eval(v.Then, env)
-			} else if v.Else != nil {
-				Eval(v.Else, env)
-			}
-		} else {
-			_, ok := cond.(*object.Nill)
-			if !ok {
-				Eval(v.Then, env)
-			} else if v.Else != nil {
-				Eval(v.Else, env)
-			}
+		newEnv := environment.NewEnclosedEnv(env)
+		obj := isConditionTrue(v.Condition, env)
+		if isError(obj) {
+			return obj
+		}
+		if obj.(object.Boolean).Value {
+			Eval(v.Then, newEnv)
+		} else if v.Else != nil {
+			Eval(v.Else, newEnv)
 		}
 
-		return cond
+		return object.Nill{}
 	case ast.AssignExpression:
 		val := Eval(v.Value, env)
 		resp := environment.Modify(env, v.IdentifierName, val)
@@ -208,10 +262,10 @@ var specialInfixOperatorErrors = map[token.TokenType]string{
 	token.LessEqual:    "Operands must be a number",
 }
 
-func evalInfixExpression(operator token.TokenType, leftast, rightast ast.Expression, env *environment.Environment) object.Object {
+func evalInfixExpression(operator token.TokenType, leftAst, rightast ast.Expression, env *environment.Environment) object.Object {
 
 	if operator == token.OrToken {
-		left := Eval(leftast, env)
+		left := Eval(leftAst, env)
 		leftBoolVal := coerceToBoolean(left)
 		if leftBoolVal {
 			return left
@@ -222,10 +276,30 @@ func evalInfixExpression(operator token.TokenType, leftast, rightast ast.Express
 			return right
 		}
 		return &object.Boolean{Value: false}
+	} else if operator == token.AndToken {
+		left := Eval(leftAst, env)
+		leftBoolVal := coerceToBoolean(left)
+		if !leftBoolVal {
+			return &object.Boolean{Value: false}
+		}
+
+		right := Eval(rightast, env)
+		rightBoolVal := coerceToBoolean(right)
+		if !rightBoolVal {
+			return &object.Boolean{Value: false}
+		}
+
+		return right
 	}
 
-	left := Eval(leftast, env)
+	left := Eval(leftAst, env)
+	if isError(left) {
+		return left
+	}
 	right := Eval(rightast, env)
+	if isError(right) {
+		return right
+	}
 
 	if left.Type() == object.FloatType || right.Type() == object.FloatType {
 		leftFloat := left
@@ -272,7 +346,7 @@ func coerceToBoolean(item object.Object) bool {
 	case *object.Integer:
 		return v.Value != 0
 	case *object.String:
-		return len(v.Value) > 0
+		return true
 	default:
 		panic(fmt.Sprintf("Not supported object type %v, in function objectToBooleanVal", reflect.TypeOf(item)))
 	}

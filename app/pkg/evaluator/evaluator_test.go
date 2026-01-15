@@ -297,6 +297,123 @@ func TestPrintStatement(t *testing.T) {
 			input:  "var a = \"quz\";\nvar b = \"quz\";(a = false) or (b = true) or (a = \"quz\");\nprint a;",
 			output: "false",
 		},
+		{
+			input:  "print false and \"ok\";",
+			output: "false",
+		},
+		{
+			input:  "if (false and \"bad\") print \"foo\";",
+			output: "",
+		},
+		{
+			input:  "if (nil and \"bad\") print \"foo\";",
+			output: "",
+		},
+		{
+			input:  "if (true and \"hello\") print \"hello\";",
+			output: "hello",
+		},
+		{
+			input:  "if (97 and \"baz\") print \"baz\";",
+			output: "baz",
+		},
+		{
+			input:  "if (\"\" and \"bar\") print \"bar\";",
+			output: "bar",
+		},
+		{
+			input:  "print false and 1;",
+			output: "false",
+		},
+		{
+			input:  "print true and 1;",
+			output: "1",
+		},
+		{
+			input:  "print 23 and \"hello\" and false;",
+			output: "false",
+		},
+		{
+			input:  "print 23 and true;",
+			output: "true",
+		},
+		{
+			input:  "var foo =0;while (foo <3) print foo = foo +1;",
+			output: "1\n2\n3",
+		},
+		{
+			input: `var quz = 0;
+						while (quz < 3) {
+						print quz;
+						quz = quz + 1;
+						}`,
+			output: "0\n1\n2",
+		},
+		{
+			input: `
+					var n = 10;
+					var fm = 0;
+					var fn = 1;
+					var index = 0;
+
+					while (index < n) {
+					print fm;
+					var temp = fm;
+					fm = fn;
+					fn = temp + fn;
+					index = index + 1;
+					}
+			`,
+			output: "0\n1\n1\n2\n3\n5\n8\n13\n21\n34",
+		},
+		{
+			input:  "for (var baz = 0; baz < 3;) print baz = baz + 1;",
+			output: "1\n2\n3",
+		},
+		{
+			input: `
+			for (var world = 0; world < 3; world = world + 1) {
+				print world;
+			}`,
+			output: "0\n1\n2",
+		},
+		{
+			input: `
+			var world = 0;
+			for (; world < 2; world = world + 1) print world;
+
+				for (var foo = 0; foo < 2;) {
+				print foo;
+				foo = foo + 1;
+			}`,
+			output: "0\n1\n0\n1",
+		},
+		{
+			input: `
+			var quz = "after";
+			{
+				var quz = "before";
+
+				for (var quz = 0; quz < 1; quz = quz + 1) {
+					print quz;
+					var quz = -1;
+					print quz;
+				}
+			}
+
+			{
+				for (var quz = 0; quz > 0; quz = quz + 1) {}
+
+				var quz = "after";
+				print quz;
+
+				for (quz = 0; quz < 1; quz = quz + 1) {
+					print quz;
+				}
+			}
+			`,
+			output: "0\n-1\nafter\n0",
+		},
 	}
 
 	for _, testCase := range test {
@@ -323,12 +440,17 @@ func TestPrintStatement(t *testing.T) {
 				t.Error(data.Inspect())
 			}
 
-			if buf.String() != testCase.output+"\n" {
-				t.Errorf("Expected '%v' to be printed, got '%s'", testCase.output+"\n", buf.String())
-			}
-
 			if len(parserInstance.Errors()) != 0 {
 				t.Errorf("Error while parsing: %v", parserInstance.Errors())
+			}
+
+			if testCase.output == "" {
+				if buf.String() != testCase.output {
+					t.Errorf("Expected '%v' to be printed, got '%s'", testCase.output, buf.String())
+
+				}
+			} else if buf.String() != testCase.output+"\n" {
+				t.Errorf("Expected '%v' to be printed, got '%s'", testCase.output+"\n", buf.String())
 			}
 
 			writer = orgWriter
