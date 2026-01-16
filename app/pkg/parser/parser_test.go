@@ -1142,6 +1142,82 @@ func TestParserLoopStatment(t *testing.T) {
 		})
 	}
 }
+
+func TestParserFunctionStatment(t *testing.T) {
+
+	tests := []struct {
+		input       string
+		expectedVal *ast.Program
+	}{
+
+		{
+			input: "print clock();",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.ExpressionStatement{
+						Expression: ast.CallExpression{
+							Function: ast.Identifier{Value: "print"},
+							Arguments: []ast.Expression{
+								ast.CallExpression{
+									Function:  ast.Identifier{Value: "clock"},
+									Arguments: []ast.Expression{},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			input: "print clock() + 53;",
+			expectedVal: &ast.Program{
+				Statements: []ast.Statement{
+					ast.ExpressionStatement{
+						Expression: ast.CallExpression{
+							Function: ast.Identifier{Value: "print"},
+							Arguments: []ast.Expression{
+								ast.InfixExpression{
+									Left: ast.CallExpression{
+										Function:  ast.Identifier{Value: "clock"},
+										Arguments: []ast.Expression{},
+									},
+									Right:    ast.Integer{Value: int64(53)},
+									Operator: token.Plus,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(fmt.Sprintf("Running input: %v", testCase.input), func(t *testing.T) {
+			lexar := lexar.NewLexar([]byte(testCase.input))
+			parser := NewParser(*lexar)
+
+			resp := parser.Parse()
+
+			if len(parser.Errors()) > 0 {
+				for _, err := range parser.Errors() {
+					t.Fatal(err)
+				}
+			}
+			if len(resp.Statements) != len(testCase.expectedVal.Statements) {
+				t.Fatalf("Expected number of statement to be: %v, got: %v", len(testCase.expectedVal.Statements), len(resp.Statements))
+			}
+			for i, statement := range resp.Statements {
+				expectedStatement := testCase.expectedVal.Statements[i]
+				err := compareStatement(statement, expectedStatement)
+
+				if err != nil {
+					t.Fatalf("\n Response statement index: %v failed \n %v", i, err)
+				}
+			}
+		})
+	}
+}
 func TestParserBlockStatements(t *testing.T) {
 
 	tests := []struct {
@@ -1254,6 +1330,10 @@ func TestParserExpressionFunctions(t *testing.T) {
 			Function:  ast.Identifier{Value: "print"},
 			Arguments: []ast.Expression{ast.GroupingExpression{Exp: ast.StringLiteral{Value: "aa"}}},
 		}},
+		{input: "print()", expectedVal: ast.CallExpression{
+			Function:  ast.Identifier{Value: "print"},
+			Arguments: []ast.Expression{},
+		}},
 		{input: "print \"aa\"", expectedVal: ast.CallExpression{
 			Function:  ast.Identifier{Value: "print"},
 			Arguments: []ast.Expression{ast.StringLiteral{Value: "aa"}},
@@ -1266,6 +1346,12 @@ func TestParserExpressionFunctions(t *testing.T) {
 			parser := NewParser(*lexar)
 
 			resp := parser.parseExpression(Lowest)
+
+			if len(parser.Errors()) > 0 {
+				for _, err := range parser.Errors() {
+					t.Fatal(err)
+				}
+			}
 
 			err := compareExpression(resp, testCase.expectedVal)
 

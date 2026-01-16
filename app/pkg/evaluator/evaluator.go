@@ -173,7 +173,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 		builtIn, ok := builtins[function]
 
 		if !ok {
-			panic("not exists")
+			panic(fmt.Sprintf("function \"%v\" not exists", function))
 		}
 
 		return builtIn(args)

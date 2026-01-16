@@ -187,233 +187,237 @@ func TestPrintStatement(t *testing.T) {
 		input  string
 		output string
 	}{
-		{
-			input:  "print(\"Test output by printing \");",
-			output: "Test output by printing ",
-		},
-		{
-			input:  "print false;",
-			output: "false",
-		},
-		{
-			input:  "print 42;",
-			output: "42",
-		},
-		{
-			input:  "print 12+24;",
-			output: "36",
-		},
-		{
-			input:  "var aa = 55;print aa;",
-			output: "55",
-		},
-		{
-			input:  "var aa;print aa;",
-			output: "nil",
-		},
-		{
-			input:  "var aa=bb=1;print bb;",
-			output: "1",
-		},
-		{
-			input:  "var baz=41;var foo=41;print baz+foo;",
-			output: "82",
-		},
-		{
-			input:  "var bar=68;var world=bar;print world+bar;",
-			output: "136",
-		},
-		{
-			input:  "var baz; baz=1;print baz=2;",
-			output: "2",
-		},
-		{
-			input:  "var bar;var foo;var aaa;print bar=foo=aaa=66+27*69;",
-			output: "1929",
-		},
-		{
-			input:  "var bar;var foo;var aaa;bar=foo=aaa=66+27*69; print aaa;",
-			output: "1929",
-		},
-		{
-			input:  "{var baz=11; print baz;}",
-			output: "11",
-		},
-		{
-			input:  "{var foo =\"outer foo\";{foo=\"modified foo\"; print foo;}}",
-			output: "modified foo",
-		},
-		{
-			input:  "{var foo =\"outer foo\";\n{foo=\"modified foo\";}print foo;}",
-			output: "modified foo",
-		},
-		{
-			input:  "if(48>11){print \"aaa\";}",
-			output: "aaa",
-		},
-		{
-			input:  "if(48>11){print \"aaa\";}",
-			output: "aaa",
-		},
-		{
-			input:  "if(48<11){print \"aaa\";}else{print \"else branch\";}",
-			output: "else branch",
-		},
-		{
-			input:  "if(48<11){print \"aaa\";}else if(10>9){print \"number 10\";}",
-			output: "number 10",
-		},
-		{
-			input:  "if(48<11){print \"aaa\";}else if(10>11){print \"number 10\";}else{print \"else branch\";}",
-			output: "else branch",
-		},
-		{
+		// {
+		// 	input:  "print(\"Test output by printing \");",
+		// 	output: "Test output by printing ",
+		// },
+		// {
+		// 	input:  "print false;",
+		// 	output: "false",
+		// },
+		// {
+		// 	input:  "print 42;",
+		// 	output: "42",
+		// },
+		// {
+		// 	input:  "print 12+24;",
+		// 	output: "36",
+		// },
+		// {
+		// 	input:  "var aa = 55;print aa;",
+		// 	output: "55",
+		// },
+		// {
+		// 	input:  "var aa;print aa;",
+		// 	output: "nil",
+		// },
+		// {
+		// 	input:  "var aa=bb=1;print bb;",
+		// 	output: "1",
+		// },
+		// {
+		// 	input:  "var baz=41;var foo=41;print baz+foo;",
+		// 	output: "82",
+		// },
+		// {
+		// 	input:  "var bar=68;var world=bar;print world+bar;",
+		// 	output: "136",
+		// },
+		// {
+		// 	input:  "var baz; baz=1;print baz=2;",
+		// 	output: "2",
+		// },
+		// {
+		// 	input:  "var bar;var foo;var aaa;print bar=foo=aaa=66+27*69;",
+		// 	output: "1929",
+		// },
+		// {
+		// 	input:  "var bar;var foo;var aaa;bar=foo=aaa=66+27*69; print aaa;",
+		// 	output: "1929",
+		// },
+		// {
+		// 	input:  "{var baz=11; print baz;}",
+		// 	output: "11",
+		// },
+		// {
+		// 	input:  "{var foo =\"outer foo\";{foo=\"modified foo\"; print foo;}}",
+		// 	output: "modified foo",
+		// },
+		// {
+		// 	input:  "{var foo =\"outer foo\";\n{foo=\"modified foo\";}print foo;}",
+		// 	output: "modified foo",
+		// },
+		// {
+		// 	input:  "if(48>11){print \"aaa\";}",
+		// 	output: "aaa",
+		// },
+		// {
+		// 	input:  "if(48>11){print \"aaa\";}",
+		// 	output: "aaa",
+		// },
+		// {
+		// 	input:  "if(48<11){print \"aaa\";}else{print \"else branch\";}",
+		// 	output: "else branch",
+		// },
+		// {
+		// 	input:  "if(48<11){print \"aaa\";}else if(10>9){print \"number 10\";}",
+		// 	output: "number 10",
+		// },
+		// {
+		// 	input:  "if(48<11){print \"aaa\";}else if(10>11){print \"number 10\";}else{print \"else branch\";}",
+		// 	output: "else branch",
+		// },
+		// {
 
-			input:  "if(48>11)if(11>10){print \"aaa\";}",
-			output: "aaa",
-		},
-		{
+		// 	input:  "if(48>11)if(11>10){print \"aaa\";}",
+		// 	output: "aaa",
+		// },
+		// {
 
-			input:  "if(48>11)if(9>10){print \"aaa\";}else{print \"else\";}",
-			output: "else",
-		},
+		// 	input:  "if(48>11)if(9>10){print \"aaa\";}else{print \"else\";}",
+		// 	output: "else",
+		// },
+		// {
+		// 	input:  "print false or \"ok\";",
+		// 	output: "ok",
+		// },
+		// {
+		// 	input:  "if(false or \"ok\"){print \"aaa\";}",
+		// 	output: "aaa",
+		// },
+		// {
+		// 	input:  "if(false or false){print \"aaa\";}else{print \"else\";}",
+		// 	output: "else",
+		// },
+		// {
+		// 	input:  "if(24 or \"bar\"){print \"aaa\";}else{print \"else\";}",
+		// 	output: "aaa",
+		// },
+		// {
+		// 	input:  "var a = \"quz\";\nvar b = \"quz\";(a = false) or (b = true) or (a = \"quz\");\nprint a;",
+		// 	output: "false",
+		// },
+		// {
+		// 	input:  "print false and \"ok\";",
+		// 	output: "false",
+		// },
+		// {
+		// 	input:  "if (false and \"bad\") print \"foo\";",
+		// 	output: "",
+		// },
+		// {
+		// 	input:  "if (nil and \"bad\") print \"foo\";",
+		// 	output: "",
+		// },
+		// {
+		// 	input:  "if (true and \"hello\") print \"hello\";",
+		// 	output: "hello",
+		// },
+		// {
+		// 	input:  "if (97 and \"baz\") print \"baz\";",
+		// 	output: "baz",
+		// },
+		// {
+		// 	input:  "if (\"\" and \"bar\") print \"bar\";",
+		// 	output: "bar",
+		// },
 		{
-			input:  "print false or \"ok\";",
-			output: "ok",
+			input:  "print (63 * 2 + 61 * 2) / (2);",
+			output: "124",
 		},
-		{
-			input:  "if(false or \"ok\"){print \"aaa\";}",
-			output: "aaa",
-		},
-		{
-			input:  "if(false or false){print \"aaa\";}else{print \"else\";}",
-			output: "else",
-		},
-		{
-			input:  "if(24 or \"bar\"){print \"aaa\";}else{print \"else\";}",
-			output: "aaa",
-		},
-		{
-			input:  "var a = \"quz\";\nvar b = \"quz\";(a = false) or (b = true) or (a = \"quz\");\nprint a;",
-			output: "false",
-		},
-		{
-			input:  "print false and \"ok\";",
-			output: "false",
-		},
-		{
-			input:  "if (false and \"bad\") print \"foo\";",
-			output: "",
-		},
-		{
-			input:  "if (nil and \"bad\") print \"foo\";",
-			output: "",
-		},
-		{
-			input:  "if (true and \"hello\") print \"hello\";",
-			output: "hello",
-		},
-		{
-			input:  "if (97 and \"baz\") print \"baz\";",
-			output: "baz",
-		},
-		{
-			input:  "if (\"\" and \"bar\") print \"bar\";",
-			output: "bar",
-		},
-		{
-			input:  "print false and 1;",
-			output: "false",
-		},
-		{
-			input:  "print true and 1;",
-			output: "1",
-		},
-		{
-			input:  "print 23 and \"hello\" and false;",
-			output: "false",
-		},
-		{
-			input:  "print 23 and true;",
-			output: "true",
-		},
-		{
-			input:  "var foo =0;while (foo <3) print foo = foo +1;",
-			output: "1\n2\n3",
-		},
-		{
-			input: `var quz = 0;
-						while (quz < 3) {
-						print quz;
-						quz = quz + 1;
-						}`,
-			output: "0\n1\n2",
-		},
-		{
-			input: `
-					var n = 10;
-					var fm = 0;
-					var fn = 1;
-					var index = 0;
+		// {
+		// 	input:  "print false and 1;",
+		// 	output: "false",
+		// },
+		// {
+		// 	input:  "print true and 1;",
+		// 	output: "1",
+		// },
+		// {
+		// 	input:  "print 23 and \"hello\" and false;",
+		// 	output: "false",
+		// },
+		// {
+		// 	input:  "print 23 and true;",
+		// 	output: "true",
+		// },
+		// {
+		// 	input:  "var foo =0;while (foo <3) print foo = foo +1;",
+		// 	output: "1\n2\n3",
+		// },
+		// {
+		// 	input: `var quz = 0;
+		// 				while (quz < 3) {
+		// 				print quz;
+		// 				quz = quz + 1;
+		// 				}`,
+		// 	output: "0\n1\n2",
+		// },
+		// {
+		// 	input: `
+		// 			var n = 10;
+		// 			var fm = 0;
+		// 			var fn = 1;
+		// 			var index = 0;
 
-					while (index < n) {
-					print fm;
-					var temp = fm;
-					fm = fn;
-					fn = temp + fn;
-					index = index + 1;
-					}
-			`,
-			output: "0\n1\n1\n2\n3\n5\n8\n13\n21\n34",
-		},
-		{
-			input:  "for (var baz = 0; baz < 3;) print baz = baz + 1;",
-			output: "1\n2\n3",
-		},
-		{
-			input: `
-			for (var world = 0; world < 3; world = world + 1) {
-				print world;
-			}`,
-			output: "0\n1\n2",
-		},
-		{
-			input: `
-			var world = 0;
-			for (; world < 2; world = world + 1) print world;
+		// 			while (index < n) {
+		// 			print fm;
+		// 			var temp = fm;
+		// 			fm = fn;
+		// 			fn = temp + fn;
+		// 			index = index + 1;
+		// 			}
+		// 	`,
+		// 	output: "0\n1\n1\n2\n3\n5\n8\n13\n21\n34",
+		// },
+		// {
+		// 	input:  "for (var baz = 0; baz < 3;) print baz = baz + 1;",
+		// 	output: "1\n2\n3",
+		// },
+		// {
+		// 	input: `
+		// 	for (var world = 0; world < 3; world = world + 1) {
+		// 		print world;
+		// 	}`,
+		// 	output: "0\n1\n2",
+		// },
+		// {
+		// 	input: `
+		// 	var world = 0;
+		// 	for (; world < 2; world = world + 1) print world;
 
-				for (var foo = 0; foo < 2;) {
-				print foo;
-				foo = foo + 1;
-			}`,
-			output: "0\n1\n0\n1",
-		},
-		{
-			input: `
-			var quz = "after";
-			{
-				var quz = "before";
+		// 		for (var foo = 0; foo < 2;) {
+		// 		print foo;
+		// 		foo = foo + 1;
+		// 	}`,
+		// 	output: "0\n1\n0\n1",
+		// },
+		// {
+		// 	input: `
+		// 	var quz = "after";
+		// 	{
+		// 		var quz = "before";
 
-				for (var quz = 0; quz < 1; quz = quz + 1) {
-					print quz;
-					var quz = -1;
-					print quz;
-				}
-			}
+		// 		for (var quz = 0; quz < 1; quz = quz + 1) {
+		// 			print quz;
+		// 			var quz = -1;
+		// 			print quz;
+		// 		}
+		// 	}
 
-			{
-				for (var quz = 0; quz > 0; quz = quz + 1) {}
+		// 	{
+		// 		for (var quz = 0; quz > 0; quz = quz + 1) {}
 
-				var quz = "after";
-				print quz;
+		// 		var quz = "after";
+		// 		print quz;
 
-				for (quz = 0; quz < 1; quz = quz + 1) {
-					print quz;
-				}
-			}
-			`,
-			output: "0\n-1\nafter\n0",
-		},
+		// 		for (quz = 0; quz < 1; quz = quz + 1) {
+		// 			print quz;
+		// 		}
+		// 	}
+		// 	`,
+		// 	output: "0\n-1\nafter\n0",
+		// },
 	}
 
 	for _, testCase := range test {

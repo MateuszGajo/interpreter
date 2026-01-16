@@ -282,8 +282,8 @@ const (
 	LessOrGreater // < >
 	Sum           // +, -
 	Product       // *, /
-	Prefix        // -X !X
 	Call          // myFunction(x)
+	Prefix        // -X !X
 )
 
 var prefix = map[token.TokenType]prefixParseFn{}
@@ -377,9 +377,19 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 
 func (p *Parser) parseExpressionList() []ast.Expression {
 	list := []ast.Expression{}
+	// if p.currToken.TokenType == token.LeftParen {
+	// 	p.next()
+
+	// 	if p.currToken.TokenType == token.RightParen {
+	// 		return list
+	// 	}
+	// }
 
 	exp := p.parseExpression(Lowest)
 	if exp == nil {
+		if p.peekToken.TokenType == token.RightParen {
+			p.next()
+		}
 		return list
 	}
 	list = append(list, exp)
@@ -477,7 +487,11 @@ func (p *Parser) parsePrefix() ast.Expression {
 }
 
 func (p *Parser) parseGrouping() ast.Expression {
+	if p.peekToken.TokenType == token.RightParen {
+		return nil
+	}
 	p.next()
+
 	groupingExpression := ast.GroupingExpression{
 		Exp: p.parseExpression(Lowest),
 	}
