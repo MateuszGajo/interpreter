@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/environment"
@@ -29,7 +30,9 @@ var builtins = map[string]func(param []object.Object) object.Object{
 		}
 
 		return &object.CompileError{Message: fmt.Sprintf("Unsupported type in print: %v", arg.Type())}
-
+	},
+	"clock": func(args []object.Object) object.Object {
+		return &object.Integer{Value: time.Now().Unix()}
 	},
 }
 
