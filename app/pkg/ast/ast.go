@@ -101,6 +101,27 @@ func (expressionStatement ExpressionStatement) String() string {
 
 func (expressionStatement ExpressionStatement) statementNode() {}
 
+type FunctionStatement struct {
+	Block BlockStatement
+	Name  string
+	Args  []*Identifier
+}
+
+func (functionStatement FunctionStatement) String() string {
+	output := fmt.Sprintf("fun %v(", functionStatement.Name)
+	for i, item := range functionStatement.Args {
+		output += item.String()
+		if i < len(functionStatement.Args)-1 {
+			output += ", "
+		}
+	}
+	output += functionStatement.Block.String()
+
+	return output
+}
+
+func (functionStatement FunctionStatement) statementNode() {}
+
 type Expression interface {
 	Expression()
 	Node
@@ -164,12 +185,18 @@ func (astIdentifier Identifier) String() string {
 }
 
 type GroupingExpression struct {
-	Exp Expression
+	Exp []Expression
 }
 
 func (astGrouping GroupingExpression) Expression() {}
 func (astGrouping GroupingExpression) String() string {
-	return "(group " + astGrouping.Exp.String() + ")"
+	output := "(group "
+
+	for _, item := range astGrouping.Exp {
+		output += item.String()
+	}
+	output += ")"
+	return output
 }
 
 type AssignExpression struct {

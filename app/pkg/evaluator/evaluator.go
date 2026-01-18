@@ -41,7 +41,7 @@ var builtins = map[string]func(param []object.Object) object.Object{
 //
 
 func variableDoesntExistError(varName string) object.Object {
-	return &object.RuntimeError{Message: fmt.Sprintf("Variable %v doesnt exist", varName)}
+	return &object.RuntimeError{Message: fmt.Sprintf("Variable or function %v doesnt exist", varName)}
 }
 
 func isConditionTrue(condition ast.Expression, env *environment.Environment) object.Object {
@@ -75,6 +75,12 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 		return evalProgram(v, env)
 	case ast.ExpressionStatement:
 		return Eval(v.Expression, env)
+	case ast.FunctionStatement:
+		builtins[v.Name] = func(param []object.Object) object.Object {
+			return Eval(v.Block, env)
+		}
+
+		return object.Nill{}
 	case ast.WhileStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		for {
@@ -185,11 +191,18 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 	case ast.Identifier:
 		data, ok := environment.Get(env, v.Value)
 
-		if !ok {
-			return variableDoesntExistError(v.Value)
+		if ok {
+			return data
 		}
 
-		return data
+		_, ok = builtins[v.Value]
+
+		if ok {
+			return &object.String{Value: fmt.Sprintf("<fn %v>", v.Value)}
+		}
+
+		return variableDoesntExistError(v.Value)
+
 	case ast.Nil:
 		return &object.Nill{}
 	case ast.Integer:
@@ -199,7 +212,11 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 	case ast.StringLiteral:
 		return &object.String{Value: v.Value}
 	case ast.GroupingExpression:
-		return Eval(v.Exp, env)
+		var res object.Object = object.Nill{}
+		for _, item := range v.Exp {
+			res = Eval(item, env)
+		}
+		return res
 	default:
 		panic(fmt.Sprintf("unsupported node type: %v", reflect.TypeOf(node)))
 	}
@@ -211,7 +228,7 @@ func evalProgram(program *ast.Program, env *environment.Environment) object.Obje
 }
 
 func evalStatements(statements []ast.Statement, env *environment.Environment) object.Object {
-	var result object.Object
+	var result object.Object = object.Nill{}
 	for _, item := range statements {
 		result = Eval(item, env)
 		if isError(result) {

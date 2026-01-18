@@ -431,6 +431,27 @@ func TestPrintStatement(t *testing.T) {
 			}`,
 			output: "Operation in progress...",
 		},
+		{
+			input: `
+			fun bar() { print 10; }
+			bar();
+			`,
+			output: "10",
+		},
+		{
+			input: `
+			fun abc() {}
+			abc();
+			`,
+			output: "",
+		},
+		{
+			input: `
+				fun foo() {}
+				print foo;
+			`,
+			output: "<fn foo>",
+		},
 	}
 
 	for _, testCase := range test {
@@ -499,11 +520,11 @@ func TestEvalErrorStatement(t *testing.T) {
 		},
 		{
 			input:  "print aa;",
-			output: &object.RuntimeError{Message: "Variable aa doesnt exist"},
+			output: &object.RuntimeError{Message: "Variable or function aa doesnt exist"},
 		},
 		{
 			input:  "var aa = baz;",
-			output: &object.RuntimeError{Message: "Variable baz doesnt exist"},
+			output: &object.RuntimeError{Message: "Variable or function baz doesnt exist"},
 		},
 	}
 

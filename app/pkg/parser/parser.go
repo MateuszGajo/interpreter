@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/ast"
 	"github.com/codecrafters-io/interpreter-starter-go/app/pkg/lexar"
@@ -101,6 +102,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseWhileStatement()
 	case token.ForToken:
 		return p.parseForStatement()
+	case token.FunToken:
+		return p.parseFunctionStatement()
 	case token.VarToken:
 		stmt = p.parseDeclarationStatement()
 	default:
@@ -113,6 +116,38 @@ func (p *Parser) parseStatement() ast.Statement {
 	p.next()
 
 	return stmt
+}
+
+// fun abc() {print \"aaa\"}
+
+func (p *Parser) parseFunctionStatement() ast.FunctionStatement {
+	function := ast.FunctionStatement{}
+	p.next()
+
+	callExp := p.parseExpression(Lowest)
+
+	c, ok := callExp.(ast.CallExpression)
+
+	if !ok {
+		panic("expected call expression")
+	}
+
+	function.Name = c.Function.(ast.Identifier).Value
+
+	for _, arg := range c.Arguments {
+		identifier, ok := arg.(ast.Identifier)
+		if !ok {
+			panic(fmt.Sprintf("expected arg to be identifier, got: %v", reflect.TypeOf(arg)))
+		}
+		function.Args = append(function.Args, &identifier)
+	}
+
+	if !p.expectPeek(token.LeftCurlyBrace) {
+		return function
+	}
+	function.Block = p.parseBlockStatement().(ast.BlockStatement)
+
+	return function
 }
 
 func (p *Parser) parseForStatement() ast.ForStatement {
@@ -375,17 +410,30 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	return ast.CallExpression{Function: function, Arguments: p.parseExpressionList()}
 }
 
+// func (p *Parser) parseGrouping() ast.Expression {
+// 	if p.peekToken.TokenType == token.RightParen {
+// 		return nil
+// 	}
+// 	p.next()
+
+// 	groupingExpression := ast.GroupingExpression{
+// 		Exp: p.parseExpression(Lowest),
+// 	}
+
+// 	if !p.expectPeek(token.RightParen) {
+// 		return nil
+// 	}
+
+// 	return groupingExpression
+// }
+
 func (p *Parser) parseExpressionList() []ast.Expression {
 	list := []ast.Expression{}
-	// if p.currToken.TokenType == token.LeftParen {
-	// 	p.next()
-
-	// 	if p.currToken.TokenType == token.RightParen {
-	// 		return list
-	// 	}
-	// }
 
 	exp := p.parseExpression(Lowest)
+	if v, ok := exp.(ast.GroupingExpression); ok {
+		return v.Exp
+	}
 	if exp == nil {
 		if p.peekToken.TokenType == token.RightParen {
 			p.next()
@@ -486,21 +534,49 @@ func (p *Parser) parsePrefix() ast.Expression {
 	return ast
 }
 
+// func (p *Parser) parseExpressionList() []ast.Expression {
+// 	list := []ast.Expression{}
+
+// 	exp := p.parseExpression(Lowest)
+// 	if v, ok := exp.(ast.GroupingExpression); ok {
+// 		return v.Exp
+// 	}
+// 	if exp == nil {
+// 		if p.peekToken.TokenType == token.RightParen {
+// 			p.next()
+// 		}
+// 		return list
+// 	}
+// 	list = append(list, exp)
+// 	p.next()
+
+// 	for p.currToken.TokenType == token.Comma {
+// 		exp := p.parseExpression(Lowest)
+// 		list = append(list, exp)
+// 	}
+
 func (p *Parser) parseGrouping() ast.Expression {
+	grouping := ast.GroupingExpression{Exp: []ast.Expression{}}
 	if p.peekToken.TokenType == token.RightParen {
 		return nil
 	}
 	p.next()
 
-	groupingExpression := ast.GroupingExpression{
-		Exp: p.parseExpression(Lowest),
+	grouping.Exp = append(grouping.Exp, p.parseExpression(Lowest))
+
+	p.next()
+	for p.currToken.TokenType == token.Comma {
+		p.next()
+		exp := p.parseExpression(Lowest)
+		grouping.Exp = append(grouping.Exp, exp)
+		p.next()
 	}
 
-	if !p.expectPeek(token.RightParen) {
+	if !p.expect(token.RightParen) {
 		return nil
 	}
 
-	return groupingExpression
+	return grouping
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {

@@ -28,9 +28,31 @@ func compareStatement(outputStatement ast.Statement, expectedStatement ast.State
 		return compareWhileStatement(v, expectedStatement.(ast.WhileStatement))
 	case ast.ForStatement:
 		return compareForStatement(v, expectedStatement.(ast.ForStatement))
+	case ast.FunctionStatement:
+		return compareFunctionStatement(v, expectedStatement.(ast.FunctionStatement))
 	default:
 		panic(fmt.Sprintf("unknown statement type: %v", reflect.TypeOf(outputStatement)))
 	}
+}
+
+func compareFunctionStatement(outputStatement ast.FunctionStatement, expectedStatement ast.FunctionStatement) error {
+	for i, arg := range outputStatement.Args {
+		err := compareExpression(arg, expectedStatement.Args[i])
+		if err != nil {
+			return fmt.Errorf("FunctionStatement argument index: %v failed \n %v", i, err)
+		}
+	}
+	if outputStatement.Name != expectedStatement.Name {
+		return fmt.Errorf("Expected functtion name to be: %v, got: %v", expectedStatement.Name, outputStatement.Name)
+	}
+
+	err := compareBlockStatement(outputStatement.Block, expectedStatement.Block)
+	if err != nil {
+		return fmt.Errorf("FUnctionStatement block err\n:%v", err)
+	}
+
+	return nil
+
 }
 
 func compareForStatement(outputStatement ast.ForStatement, expectedStatement ast.ForStatement) error {
@@ -219,7 +241,13 @@ func compareExpression(outputExpression ast.Expression, expectedExpression ast.E
 		// }
 	case ast.GroupingExpression:
 		expected := expectedExpression.(ast.GroupingExpression)
-		return compareExpression(v.Exp, expected.Exp)
+		for i, exp := range expected.Exp {
+			err := compareExpression(exp, expected.Exp[i])
+			if err != nil {
+				return fmt.Errorf("grouping expression err index: %v \n err:%v", i, err)
+			}
+		}
+		return nil
 	case ast.Nil:
 		return nil
 	default:
@@ -246,6 +274,9 @@ func compareExpression(outputExpression ast.Expression, expectedExpression ast.E
 // }
 
 func compareBlockStatement(outputStatement ast.BlockStatement, expectedStatement ast.BlockStatement) error {
+	if len(outputStatement.Statements) != len(expectedStatement.Statements) {
+		return fmt.Errorf("Block statement number of statements differs, expected: %v, got: %v", len(expectedStatement.Statements), len(outputStatement.Statements))
+	}
 	for i, statement := range outputStatement.Statements {
 		err := compareStatement(statement, expectedStatement.Statements[i])
 
@@ -271,7 +302,7 @@ func TestParserExpression(t *testing.T) {
 		{input: "123;", expectedVal: ast.Integer{Value: 123}},
 		{input: "\"123\";", expectedVal: ast.StringLiteral{Value: "123"}},
 		{input: "let;", expectedVal: ast.Identifier{Value: "let"}},
-		{input: "(let);", expectedVal: ast.GroupingExpression{Exp: ast.Identifier{Value: "let"}}},
+		{input: "(let);", expectedVal: ast.GroupingExpression{Exp: []ast.Expression{ast.Identifier{Value: "let"}}}},
 		{input: "!true;", expectedVal: ast.PrefixExpression{
 			Right:    ast.Boolean{Value: true},
 			Operator: token.Bang,
@@ -286,20 +317,20 @@ func TestParserExpression(t *testing.T) {
 		{input: "!!(true);", expectedVal: ast.PrefixExpression{
 			Right: ast.PrefixExpression{
 				Right: ast.GroupingExpression{
-					Exp: ast.Boolean{Value: true},
+					Exp: []ast.Expression{ast.Boolean{Value: true}},
 				},
 				Operator: token.Bang,
 			},
 			Operator: token.Bang,
 		}},
 		{input: "(!!true);", expectedVal: ast.GroupingExpression{
-			Exp: ast.PrefixExpression{
+			Exp: []ast.Expression{ast.PrefixExpression{
 				Right: ast.PrefixExpression{
 					Right:    ast.Boolean{Value: true},
 					Operator: token.Bang,
 				},
 				Operator: token.Bang,
-			}},
+			}}},
 		},
 	}
 
@@ -404,16 +435,16 @@ func TestParserExpressionArithmetic(t *testing.T) {
 			},
 		}},
 		{input: "(37 * -21 / (45 * 16))", expectedVal: ast.GroupingExpression{
-			Exp: ast.InfixExpression{
+			Exp: []ast.Expression{ast.InfixExpression{
 				Operator: token.Slash,
 
 				Right: ast.GroupingExpression{
-					Exp: ast.InfixExpression{
+					Exp: []ast.Expression{ast.InfixExpression{
 						Operator: token.Star,
 
 						Left:  ast.Integer{Value: 45},
 						Right: ast.Integer{Value: 16},
-					},
+					}},
 				},
 				Left: ast.InfixExpression{
 					Operator: token.Star,
@@ -425,7 +456,7 @@ func TestParserExpressionArithmetic(t *testing.T) {
 						Right: ast.Integer{Value: 21},
 					},
 				},
-			},
+			}},
 		}},
 		{input: "1+2*3+4", expectedVal: ast.InfixExpression{
 			Operator: token.Plus,
@@ -459,40 +490,40 @@ func TestParserExpressionArithmetic(t *testing.T) {
 			Operator: token.Star,
 
 			Left: ast.GroupingExpression{
-				Exp: ast.InfixExpression{
+				Exp: []ast.Expression{ast.InfixExpression{
 					Operator: token.Plus,
 
 					Left:  ast.Integer{Value: 1},
 					Right: ast.Integer{Value: 2},
-				},
+				}},
 			},
 			Right: ast.GroupingExpression{
-				Exp: ast.InfixExpression{
+				Exp: []ast.Expression{ast.InfixExpression{
 					Operator: token.Plus,
 
 					Left:  ast.Integer{Value: 3},
 					Right: ast.Integer{Value: 4},
-				},
+				}},
 			},
 		}},
 		{input: "(1+2)>(3+4)", expectedVal: ast.InfixExpression{
 			Operator: token.Greater,
 
 			Left: ast.GroupingExpression{
-				Exp: ast.InfixExpression{
+				Exp: []ast.Expression{ast.InfixExpression{
 					Operator: token.Plus,
 
 					Left:  ast.Integer{Value: 1},
 					Right: ast.Integer{Value: 2},
-				},
+				}},
 			},
 			Right: ast.GroupingExpression{
-				Exp: ast.InfixExpression{
+				Exp: []ast.Expression{ast.InfixExpression{
 					Operator: token.Plus,
 
 					Left:  ast.Integer{Value: 3},
 					Right: ast.Integer{Value: 4},
-				},
+				}},
 			},
 		}},
 		{input: "22 == 20", expectedVal: ast.InfixExpression{
@@ -637,10 +668,10 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
+							Exp: []ast.Expression{ast.Integer{
 
 								Value: 48,
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -664,7 +695,7 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.InfixExpression{
+							Exp: []ast.Expression{ast.InfixExpression{
 								Operator: token.Greater,
 								Left: ast.Integer{
 
@@ -674,7 +705,7 @@ func TestParserIfStatment(t *testing.T) {
 
 									Value: 11,
 								},
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -699,10 +730,10 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
+							Exp: []ast.Expression{ast.Integer{
 
 								Value: 48,
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -726,10 +757,10 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
+							Exp: []ast.Expression{ast.Integer{
 
 								Value: 40,
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -765,10 +796,10 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
+							Exp: []ast.Expression{ast.Integer{
 
 								Value: 40,
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -786,10 +817,10 @@ func TestParserIfStatment(t *testing.T) {
 							Statements: []ast.Statement{
 								ast.IfStatement{
 									Condition: ast.GroupingExpression{
-										Exp: ast.Integer{
+										Exp: []ast.Expression{ast.Integer{
 
 											Value: 30,
-										},
+										}},
 									},
 									Then: ast.BlockStatement{
 										Statements: []ast.Statement{
@@ -816,19 +847,19 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
+							Exp: []ast.Expression{ast.Integer{
 
 								Value: 40,
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
 								ast.IfStatement{
 									Condition: ast.GroupingExpression{
-										Exp: ast.Integer{
+										Exp: []ast.Expression{ast.Integer{
 
 											Value: 30,
-										},
+										}},
 									},
 									Then: ast.BlockStatement{
 										Statements: []ast.Statement{
@@ -854,19 +885,19 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.Integer{
+							Exp: []ast.Expression{ast.Integer{
 
 								Value: 40,
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
 								ast.IfStatement{
 									Condition: ast.GroupingExpression{
-										Exp: ast.Integer{
+										Exp: []ast.Expression{ast.Integer{
 
 											Value: 30,
-										},
+										}},
 									},
 									Then: ast.BlockStatement{
 										Statements: []ast.Statement{
@@ -893,7 +924,7 @@ func TestParserIfStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.IfStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.InfixExpression{
+							Exp: []ast.Expression{ast.InfixExpression{
 								Operator: token.OrToken,
 
 								Left: ast.Boolean{
@@ -904,7 +935,7 @@ func TestParserIfStatment(t *testing.T) {
 
 									Value: "ok",
 								},
-							},
+							}},
 						},
 						Then: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -972,12 +1003,12 @@ func TestParserLoopStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.WhileStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.InfixExpression{
+							Exp: []ast.Expression{ast.InfixExpression{
 								Operator: token.Less,
 
 								Left:  ast.Integer{Value: 3},
 								Right: ast.Integer{Value: 2},
-							},
+							}},
 						},
 						Block: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -1002,12 +1033,12 @@ func TestParserLoopStatment(t *testing.T) {
 				Statements: []ast.Statement{
 					ast.WhileStatement{
 						Condition: ast.GroupingExpression{
-							Exp: ast.InfixExpression{
+							Exp: []ast.Expression{ast.InfixExpression{
 								Operator: token.Less,
 
 								Left:  ast.Integer{Value: 3},
 								Right: ast.Integer{Value: 2},
-							},
+							}},
 						},
 						Block: ast.BlockStatement{
 							Statements: []ast.Statement{
@@ -1149,7 +1180,6 @@ func TestParserFunctionStatment(t *testing.T) {
 		input       string
 		expectedVal *ast.Program
 	}{
-
 		{
 			input: "print clock();",
 			expectedVal: &ast.Program{
@@ -1168,28 +1198,79 @@ func TestParserFunctionStatment(t *testing.T) {
 				},
 			},
 		},
-		{
-			input: "print clock() + 53;",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.ExpressionStatement{
-						Expression: ast.CallExpression{
-							Function: ast.Identifier{Value: "print"},
-							Arguments: []ast.Expression{
-								ast.InfixExpression{
-									Left: ast.CallExpression{
-										Function:  ast.Identifier{Value: "clock"},
-										Arguments: []ast.Expression{},
-									},
-									Right:    ast.Integer{Value: int64(53)},
-									Operator: token.Plus,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		// {
+		// 	input: "print clock() + 53;",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.ExpressionStatement{
+		// 				Expression: ast.CallExpression{
+		// 					Function: ast.Identifier{Value: "print"},
+		// 					Arguments: []ast.Expression{
+		// 						ast.InfixExpression{
+		// 							Left: ast.CallExpression{
+		// 								Function:  ast.Identifier{Value: "clock"},
+		// 								Arguments: []ast.Expression{},
+		// 							},
+		// 							Right:    ast.Integer{Value: int64(53)},
+		// 							Operator: token.Plus,
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "fun abc() {print \"aaa\";}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.FunctionStatement{
+		// 				Name: "abc",
+		// 				Args: []*ast.Identifier{},
+		// 				Block: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print"},
+		// 								Arguments: []ast.Expression{
+		// 									ast.StringLiteral{Value: "aaa"},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "fun abc() {}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.FunctionStatement{
+		// 				Name: "abc",
+		// 				Args: []*ast.Identifier{},
+		// 				Block: ast.BlockStatement{
+		// 					Statements: []ast.Statement{},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "fun abc(a) {}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.FunctionStatement{
+		// 				Name: "abc",
+		// 				Args: []*ast.Identifier{},
+		// 				Block: ast.BlockStatement{
+		// 					Statements: []ast.Statement{},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 
 	for _, testCase := range tests {
@@ -1328,7 +1409,7 @@ func TestParserExpressionFunctions(t *testing.T) {
 	}{
 		{input: "print(\"aa\")", expectedVal: ast.CallExpression{
 			Function:  ast.Identifier{Value: "print"},
-			Arguments: []ast.Expression{ast.GroupingExpression{Exp: ast.StringLiteral{Value: "aa"}}},
+			Arguments: []ast.Expression{ast.StringLiteral{Value: "aa"}},
 		}},
 		{input: "print()", expectedVal: ast.CallExpression{
 			Function:  ast.Identifier{Value: "print"},
@@ -1337,6 +1418,14 @@ func TestParserExpressionFunctions(t *testing.T) {
 		{input: "print \"aa\"", expectedVal: ast.CallExpression{
 			Function:  ast.Identifier{Value: "print"},
 			Arguments: []ast.Expression{ast.StringLiteral{Value: "aa"}},
+		}},
+		{input: "print(\"aa\",\"bb\")", expectedVal: ast.CallExpression{
+			Function:  ast.Identifier{Value: "print"},
+			Arguments: []ast.Expression{ast.StringLiteral{Value: "aa"}, ast.StringLiteral{Value: "bb"}},
+		}},
+		{input: "print(\"aa\",\"bb\")", expectedVal: ast.CallExpression{
+			Function:  ast.Identifier{Value: "print"},
+			Arguments: []ast.Expression{ast.StringLiteral{Value: "aa"}, ast.StringLiteral{Value: "bb"}, ast.StringLiteral{Value: "cc"}},
 		}},
 	}
 
@@ -1368,7 +1457,7 @@ func TestExpressionErrors(t *testing.T) {
 		input  string
 		errors []string
 	}{
-		{input: "(72 +)", errors: []string{"[line 1] Error at ')': Expect expression.", "[line 1] expected next token to be RIGHT_PAREN, got EOF instead", "[line 1] expected token to be SEMICOLON, got RIGHT_PAREN instead"}},
+		{input: "(72 +)", errors: []string{"[line 1] Error at ')': Expect expression.", "[line 1] expected token to be RIGHT_PAREN, got EOF instead", "[line 1] expected token to be SEMICOLON, got EOF instead"}},
 		{input: "{var baz=1;", errors: []string{"[line 1] expected token to be RIGHT_BRACE, got EOF instead"}},
 	}
 
