@@ -106,6 +106,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseFunctionStatement()
 	case token.VarToken:
 		stmt = p.parseDeclarationStatement()
+	case token.ReturnToken:
+		stmt = p.parseReturnStatement()
 	default:
 		stmt = p.parseExpressionStatement()
 	}
@@ -118,7 +120,17 @@ func (p *Parser) parseStatement() ast.Statement {
 	return stmt
 }
 
-// fun abc() {print \"aaa\"}
+func (p *Parser) parseReturnStatement() ast.ReturnStatement {
+	returnStatement := ast.ReturnStatement{}
+	p.next()
+
+	returnStatement.Expression = p.parseExpression(Lowest)
+	if p.peekToken.TokenType == token.Semicolon {
+		p.next()
+	}
+
+	return returnStatement
+}
 
 func (p *Parser) parseFunctionStatement() ast.FunctionStatement {
 	function := ast.FunctionStatement{}
@@ -407,7 +419,9 @@ func (p *Parser) parsePrintExpression() ast.Expression {
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
-	return ast.CallExpression{Function: function, Arguments: p.parseExpressionList()}
+	callExp := ast.CallExpression{Function: function}
+	callExp.Arguments = p.parseExpressionList()
+	return callExp
 }
 
 // func (p *Parser) parseGrouping() ast.Expression {
@@ -430,10 +444,16 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 func (p *Parser) parseExpressionList() []ast.Expression {
 	list := []ast.Expression{}
 
-	exp := p.parseExpression(Lowest)
-	if v, ok := exp.(ast.GroupingExpression); ok {
-		return v.Exp
+	if p.currToken.TokenType == token.LeftParen {
+		p.next()
 	}
+	if p.currToken.TokenType == token.RightParen {
+		return list
+	}
+	exp := p.parseExpression(Lowest)
+	// if v, ok := exp.(ast.GroupingExpression); ok {
+	// 	return v.Exp
+	// }
 	if exp == nil {
 		if p.peekToken.TokenType == token.RightParen {
 			p.next()
@@ -444,8 +464,10 @@ func (p *Parser) parseExpressionList() []ast.Expression {
 	p.next()
 
 	for p.currToken.TokenType == token.Comma {
+		p.next()
 		exp := p.parseExpression(Lowest)
 		list = append(list, exp)
+		p.next()
 	}
 
 	return list

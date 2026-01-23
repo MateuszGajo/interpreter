@@ -13,6 +13,7 @@ const (
 	IdentifierType   ObjectType = "IDENTIFIER"
 	CompileErrorType ObjectType = "COMPILE_ERROR"
 	RuntimeErrorType ObjectType = "RUNTIME_ERROR"
+	ReturnType       ObjectType = "RETURN"
 )
 
 type Object interface {
@@ -76,6 +77,17 @@ func (nill Nill) Type() ObjectType {
 }
 func (nill Nill) Inspect() string {
 	return "nil"
+}
+
+type ReturnValue struct {
+	Val Object
+}
+
+func (returnVal ReturnValue) Type() ObjectType {
+	return ReturnType
+}
+func (returnValue ReturnValue) Inspect() string {
+	return returnValue.Val.Inspect()
 }
 
 type Identifier struct {

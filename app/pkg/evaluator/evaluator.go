@@ -75,9 +75,24 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 		return evalProgram(v, env)
 	case ast.ExpressionStatement:
 		return Eval(v.Expression, env)
+	case ast.ReturnStatement:
+		resp := Eval(v.Expression, env)
+
+		if isError(resp) {
+			return resp
+		}
+
+		return &object.ReturnValue{Val: resp}
 	case ast.FunctionStatement:
 		builtins[v.Name] = func(param []object.Object) object.Object {
-			return Eval(v.Block, env)
+			newEnv := environment.NewEnclosedEnv(env)
+			if len(v.Args) != len(param) {
+				panic("number of args differs")
+			}
+			for i, arg := range v.Args {
+				environment.Set(newEnv, arg.Value, param[i])
+			}
+			return Eval(v.Block, newEnv)
 		}
 
 		return object.Nill{}
@@ -121,19 +136,24 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 		return object.Nill{}
 	case ast.BlockStatement:
 		newEnv := environment.NewEnclosedEnv(env)
-		return evalStatements(v.Statements, newEnv)
+		return evalBlockStatements(v.Statements, newEnv)
 	case *ast.BlockStatement:
 		return Eval(*v, env)
 	case ast.IfStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		obj := isConditionTrue(v.Condition, env)
+		var data object.Object = object.Nill{}
 		if isError(obj) {
 			return obj
 		}
 		if obj.(object.Boolean).Value {
-			Eval(v.Then, newEnv)
+			data = Eval(v.Then, newEnv)
 		} else if v.Else != nil {
-			Eval(v.Else, newEnv)
+			data = Eval(v.Else, newEnv)
+		}
+
+		if _, ok := data.(object.Nill); !ok {
+			return &object.ReturnValue{Val: data}
 		}
 
 		return object.Nill{}
@@ -231,7 +251,24 @@ func evalStatements(statements []ast.Statement, env *environment.Environment) ob
 	var result object.Object = object.Nill{}
 	for _, item := range statements {
 		result = Eval(item, env)
+
 		if isError(result) {
+			return result
+		}
+	}
+
+	return result
+}
+
+func evalBlockStatements(statements []ast.Statement, env *environment.Environment) object.Object {
+	var result object.Object = object.Nill{}
+	for _, item := range statements {
+		result = Eval(item, env)
+
+		switch result := result.(type) {
+		case *object.ReturnValue:
+			return result.Val
+		case *object.CompileError, *object.RuntimeError:
 			return result
 		}
 	}

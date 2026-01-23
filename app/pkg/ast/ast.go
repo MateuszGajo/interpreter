@@ -91,6 +91,16 @@ func (forStatement ForStatement) String() string {
 }
 func (forStatement ForStatement) statementNode() {}
 
+type ReturnStatement struct {
+	Expression Expression
+}
+
+func (returnStatement ReturnStatement) String() string {
+	return returnStatement.Expression.String()
+}
+
+func (returnStatement ReturnStatement) statementNode() {}
+
 type ExpressionStatement struct {
 	Expression Expression
 }
