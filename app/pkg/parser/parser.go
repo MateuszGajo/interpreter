@@ -124,7 +124,13 @@ func (p *Parser) parseReturnStatement() ast.ReturnStatement {
 	returnStatement := ast.ReturnStatement{}
 	p.next()
 
+	if p.currToken.TokenType == token.Semicolon {
+		returnStatement.Expression = ast.Nil{}
+		return returnStatement
+	}
+
 	returnStatement.Expression = p.parseExpression(Lowest)
+
 	if p.peekToken.TokenType == token.Semicolon {
 		p.next()
 	}
@@ -415,7 +421,7 @@ func (p *Parser) parseAssign(left ast.Expression) ast.Expression {
 
 func (p *Parser) parsePrintExpression() ast.Expression {
 	p.next()
-	return ast.CallExpression{Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}}, Arguments: p.parseExpressionList()}
+	return ast.CallExpression{Function: ast.Identifier{Value: "print", Token: token.Token{TokenType: token.Identifier, Lexeme: "print"}}, Arguments: p.parsePrintExpressionList()}
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
@@ -424,22 +430,31 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	return callExp
 }
 
-// func (p *Parser) parseGrouping() ast.Expression {
-// 	if p.peekToken.TokenType == token.RightParen {
-// 		return nil
-// 	}
-// 	p.next()
+func (p *Parser) parsePrintExpressionList() []ast.Expression {
+	list := []ast.Expression{}
 
-// 	groupingExpression := ast.GroupingExpression{
-// 		Exp: p.parseExpression(Lowest),
-// 	}
+	exp := p.parseExpression(Lowest)
+	if v, ok := exp.(ast.GroupingExpression); ok {
+		return v.Exp
+	}
+	if exp == nil {
+		if p.peekToken.TokenType == token.RightParen {
+			p.next()
+		}
+		return list
+	}
+	list = append(list, exp)
+	p.next()
 
-// 	if !p.expectPeek(token.RightParen) {
-// 		return nil
-// 	}
+	for p.currToken.TokenType == token.Comma {
+		p.next()
+		exp := p.parseExpression(Lowest)
+		list = append(list, exp)
+		p.next()
+	}
 
-// 	return groupingExpression
-// }
+	return list
+}
 
 func (p *Parser) parseExpressionList() []ast.Expression {
 	list := []ast.Expression{}
@@ -451,9 +466,7 @@ func (p *Parser) parseExpressionList() []ast.Expression {
 		return list
 	}
 	exp := p.parseExpression(Lowest)
-	// if v, ok := exp.(ast.GroupingExpression); ok {
-	// 	return v.Exp
-	// }
+
 	if exp == nil {
 		if p.peekToken.TokenType == token.RightParen {
 			p.next()

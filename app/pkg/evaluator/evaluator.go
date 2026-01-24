@@ -95,7 +95,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			return Eval(v.Block, newEnv)
 		}
 
-		return object.Nill{}
+		return &object.Nill{}
 	case ast.WhileStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		for {
@@ -103,14 +103,19 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			if isError(obj) {
 				return obj
 			}
+			var data object.Object = &object.Nill{}
+
 			if obj.(object.Boolean).Value {
-				Eval(v.Block, newEnv)
+				data = Eval(v.Block, newEnv)
 			} else {
 				break
 			}
+			if _, ok := data.(*object.Nill); !ok {
+				return &object.ReturnValue{Val: data}
+			}
 		}
 
-		return object.Nill{}
+		return &object.Nill{}
 	case ast.ForStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		if v.Declaration != nil {
@@ -133,7 +138,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			}
 		}
 
-		return object.Nill{}
+		return &object.Nill{}
 	case ast.BlockStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		return evalBlockStatements(v.Statements, newEnv)
@@ -142,7 +147,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 	case ast.IfStatement:
 		newEnv := environment.NewEnclosedEnv(env)
 		obj := isConditionTrue(v.Condition, env)
-		var data object.Object = object.Nill{}
+		var data object.Object = &object.Nill{}
 		if isError(obj) {
 			return obj
 		}
@@ -152,11 +157,11 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			data = Eval(v.Else, newEnv)
 		}
 
-		if _, ok := data.(object.Nill); !ok {
+		if _, ok := data.(*object.Nill); !ok {
 			return &object.ReturnValue{Val: data}
 		}
 
-		return object.Nill{}
+		return &object.Nill{}
 	case ast.AssignExpression:
 		val := Eval(v.Value, env)
 		resp := environment.Modify(env, v.IdentifierName, val)
@@ -232,7 +237,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 	case ast.StringLiteral:
 		return &object.String{Value: v.Value}
 	case ast.GroupingExpression:
-		var res object.Object = object.Nill{}
+		var res object.Object = &object.Nill{}
 		for _, item := range v.Exp {
 			res = Eval(item, env)
 		}
@@ -248,7 +253,7 @@ func evalProgram(program *ast.Program, env *environment.Environment) object.Obje
 }
 
 func evalStatements(statements []ast.Statement, env *environment.Environment) object.Object {
-	var result object.Object = object.Nill{}
+	var result object.Object = &object.Nill{}
 	for _, item := range statements {
 		result = Eval(item, env)
 
@@ -261,9 +266,8 @@ func evalStatements(statements []ast.Statement, env *environment.Environment) ob
 }
 
 func evalBlockStatements(statements []ast.Statement, env *environment.Environment) object.Object {
-	var result object.Object = object.Nill{}
 	for _, item := range statements {
-		result = Eval(item, env)
+		result := Eval(item, env)
 
 		switch result := result.(type) {
 		case *object.ReturnValue:
@@ -272,8 +276,7 @@ func evalBlockStatements(statements []ast.Statement, env *environment.Environmen
 			return result
 		}
 	}
-
-	return result
+	return &object.Nill{}
 }
 
 func isError(item object.Object) bool {

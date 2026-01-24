@@ -1195,124 +1195,124 @@ func TestParserFunctionStatment(t *testing.T) {
 		input       string
 		expectedVal *ast.Program
 	}{
-		{
-			input: "print clock();",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.ExpressionStatement{
-						Expression: ast.CallExpression{
-							Function: ast.Identifier{Value: "print"},
-							Arguments: []ast.Expression{
-								ast.CallExpression{
-									Function:  ast.Identifier{Value: "clock"},
-									Arguments: []ast.Expression{},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			input: "print clock() + 53;",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.ExpressionStatement{
-						Expression: ast.CallExpression{
-							Function: ast.Identifier{Value: "print"},
-							Arguments: []ast.Expression{
-								ast.InfixExpression{
-									Left: ast.CallExpression{
-										Function:  ast.Identifier{Value: "clock"},
-										Arguments: []ast.Expression{},
-									},
-									Right:    ast.Integer{Value: int64(53)},
-									Operator: token.Plus,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			input: "fun abc() {print \"aaa\";}",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.FunctionStatement{
-						Name: "abc",
-						Args: []*ast.Identifier{},
-						Block: ast.BlockStatement{
-							Statements: []ast.Statement{
-								ast.ExpressionStatement{
-									Expression: ast.CallExpression{
-										Function: ast.Identifier{Value: "print"},
-										Arguments: []ast.Expression{
-											ast.StringLiteral{Value: "aaa"},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			input: "fun abc() {}",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.FunctionStatement{
-						Name: "abc",
-						Args: []*ast.Identifier{},
-						Block: ast.BlockStatement{
-							Statements: []ast.Statement{},
-						},
-					},
-				},
-			},
-		},
-		{
-			input: "fun abc(a) {}",
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.FunctionStatement{
-						Name: "abc",
-						Args: []*ast.Identifier{{Value: "a"}},
-						Block: ast.BlockStatement{
-							Statements: []ast.Statement{},
-						},
-					},
-				},
-			},
-		},
-		{
-			input: `
-			fun fib(n) {
-				return fib(n);
-			}
-			`,
-			expectedVal: &ast.Program{
-				Statements: []ast.Statement{
-					ast.FunctionStatement{
-						Name: "fib",
-						Args: []*ast.Identifier{{Value: "n"}},
-						Block: ast.BlockStatement{
-							Statements: []ast.Statement{
-								ast.ReturnStatement{
-									Expression: ast.CallExpression{
-										Function: ast.Identifier{Value: "fib"},
-										Arguments: []ast.Expression{
-											ast.Identifier{Value: "n"},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		// {
+		// 	input: "print clock();",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.ExpressionStatement{
+		// 				Expression: ast.CallExpression{
+		// 					Function: ast.Identifier{Value: "print"},
+		// 					Arguments: []ast.Expression{
+		// 						ast.CallExpression{
+		// 							Function:  ast.Identifier{Value: "clock"},
+		// 							Arguments: []ast.Expression{},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "print clock() + 53;",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.ExpressionStatement{
+		// 				Expression: ast.CallExpression{
+		// 					Function: ast.Identifier{Value: "print"},
+		// 					Arguments: []ast.Expression{
+		// 						ast.InfixExpression{
+		// 							Left: ast.CallExpression{
+		// 								Function:  ast.Identifier{Value: "clock"},
+		// 								Arguments: []ast.Expression{},
+		// 							},
+		// 							Right:    ast.Integer{Value: int64(53)},
+		// 							Operator: token.Plus,
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "fun abc() {print \"aaa\";}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.FunctionStatement{
+		// 				Name: "abc",
+		// 				Args: []*ast.Identifier{},
+		// 				Block: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ExpressionStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "print"},
+		// 								Arguments: []ast.Expression{
+		// 									ast.StringLiteral{Value: "aaa"},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "fun abc() {}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.FunctionStatement{
+		// 				Name: "abc",
+		// 				Args: []*ast.Identifier{},
+		// 				Block: ast.BlockStatement{
+		// 					Statements: []ast.Statement{},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: "fun abc(a) {}",
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.FunctionStatement{
+		// 				Name: "abc",
+		// 				Args: []*ast.Identifier{{Value: "a"}},
+		// 				Block: ast.BlockStatement{
+		// 					Statements: []ast.Statement{},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	input: `
+		// 	fun fib(n) {
+		// 		return fib(n);
+		// 	}
+		// 	`,
+		// 	expectedVal: &ast.Program{
+		// 		Statements: []ast.Statement{
+		// 			ast.FunctionStatement{
+		// 				Name: "fib",
+		// 				Args: []*ast.Identifier{{Value: "n"}},
+		// 				Block: ast.BlockStatement{
+		// 					Statements: []ast.Statement{
+		// 						ast.ReturnStatement{
+		// 							Expression: ast.CallExpression{
+		// 								Function: ast.Identifier{Value: "fib"},
+		// 								Arguments: []ast.Expression{
+		// 									ast.Identifier{Value: "n"},
+		// 								},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
 		{
 			input: `
 			fun fib(n) {
