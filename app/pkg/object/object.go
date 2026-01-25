@@ -58,6 +58,18 @@ func (stringObj String) Inspect() string {
 	return fmt.Sprintf("%v", stringObj.Value)
 }
 
+type Function struct {
+	Value    string
+	Function func(param []Object) Object
+}
+
+func (stringObj Function) Type() ObjectType {
+	return StringType
+}
+func (stringObj Function) Inspect() string {
+	return fmt.Sprintf("%v", stringObj.Value)
+}
+
 type Boolean struct {
 	Value bool
 }

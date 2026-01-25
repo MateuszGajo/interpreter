@@ -87,7 +87,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 		builtins[v.Name] = func(param []object.Object) object.Object {
 			newEnv := environment.NewEnclosedEnv(env)
 			if len(v.Args) != len(param) {
-				panic("number of args differs")
+				return &object.RuntimeError{Message: "number of args differs"}
 			}
 			for i, arg := range v.Args {
 				environment.Set(newEnv, arg.Value, param[i])
@@ -193,7 +193,12 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 		right := Eval(v.Right, env)
 		return evalPrefixExpression(v.Operator, right)
 	case ast.CallExpression:
-		function := v.Function.(ast.Identifier).Value
+		var data any
+		if _, ok := v.Function.(ast.CallExpression); ok {
+			data = Eval(v.Function, env)
+
+		}
+
 		args := []object.Object{}
 
 		for _, item := range v.Arguments {
@@ -204,10 +209,25 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			args = append(args, data)
 		}
 
-		builtIn, ok := builtins[function]
+		if aa, ok := data.(*object.Function); ok {
+			return aa.Function(args)
+		}
+
+		function, ok := v.Function.(ast.Identifier)
 
 		if !ok {
-			panic(fmt.Sprintf("function \"%v\" not exists", function))
+			return &object.RuntimeError{Message: fmt.Sprintf("%v its not a function", v.Function)}
+		}
+
+		data, ok = environment.Get(env, function.Value)
+		if a, ok := data.(*object.Function); ok {
+			return a.Function(args)
+		}
+
+		builtIn, ok := builtins[function.Value]
+
+		if !ok {
+			panic(fmt.Sprintf("function \"%v\" not exists", function.Value))
 		}
 
 		return builtIn(args)
@@ -220,10 +240,9 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			return data
 		}
 
-		_, ok = builtins[v.Value]
-
+		data1, ok := builtins[v.Value]
 		if ok {
-			return &object.String{Value: fmt.Sprintf("<fn %v>", v.Value)}
+			return &object.Function{Value: fmt.Sprintf("<fn %v>", v.Value), Function: data1}
 		}
 
 		return variableDoesntExistError(v.Value)
